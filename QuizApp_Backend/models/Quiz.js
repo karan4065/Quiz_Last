@@ -21,6 +21,7 @@ const QuizSchema = new Schema({
           _id: { type: Schema.Types.ObjectId, auto: true },
           question: { type: String }, 
           image: { type: String },    
+          description:{type:String},
           options: { type: [String], required: true },
           answer: {
             type: String,

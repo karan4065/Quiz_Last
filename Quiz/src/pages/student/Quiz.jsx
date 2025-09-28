@@ -204,16 +204,16 @@ const Quiz = () => {
           {questions.length > 0 ? (
             <>
               <h2 className="text-2xl font-semibold mb-4">
-                Q{currentQuestionIndex + 1}. {currentQ?.question || " "}
+                Q{currentQuestionIndex + 1}. {currentQ?.question || " "} <span>{currentQ?.description}</span>
               </h2>
 
               {/* ✅ Show Image if exists */}
               {currentQ?.image && (
-                <div className="mb-4">
+                <div className="mb-4 flex justify-center">
                   <img
                     src={currentQ.image}
                     alt="Question"
-                    className="max-w-xs md:max-w-md border rounded-lg shadow-md"
+                    className="max-w-xs md:max-w-md border rounded-lg shadow-md "
                   />
                 </div>
               )}

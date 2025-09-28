@@ -14,6 +14,7 @@ const CreateQuiz = ({ facultyDetails }) => {
     category: "",
     question: "",
     image: null,
+    description:"",
     optionA: "",
     optionB: "",
     optionC: "",
@@ -75,7 +76,7 @@ const CreateQuiz = ({ facultyDetails }) => {
 
   // Add Image Question to Existing Quiz
   const handleAddImageQuestion = async () => {
-    const { category, image, optionA, optionB, optionC, optionD, correctOption, question } =
+    const { category, image,description, optionA, optionB, optionC, optionD, correctOption, question } =
       imageQuestion;
 
     if (!category || !image || !optionA || !optionB || !optionC || !optionD)
@@ -85,6 +86,7 @@ const CreateQuiz = ({ facultyDetails }) => {
 
     const formData = new FormData();
     formData.append("image", image);
+    formData.append("description", description|| "");
     formData.append("options", JSON.stringify([optionA, optionB, optionC, optionD]));
     formData.append("answer", imageQuestion[`option${correctOption}`]);
     formData.append("category", category);
@@ -104,6 +106,7 @@ const CreateQuiz = ({ facultyDetails }) => {
           category: "",
           question: "",
           image: null,
+          description:"",
           optionA: "",
           optionB: "",
           optionC: "",
@@ -120,7 +123,7 @@ const CreateQuiz = ({ facultyDetails }) => {
 
   // Create New Quiz with First Image Question
   const handleCreateQuizWithImage = async () => {
-    const { category, question, image, optionA, optionB, optionC, optionD, correctOption } =
+    const { category, question, image,description, optionA, optionB, optionC, optionD, correctOption } =
       imageQuestion;
 
     if (!quizTitle || !quizDuration || !category || !image || !optionA || !optionB || !optionC || !optionD)
@@ -135,6 +138,8 @@ const CreateQuiz = ({ facultyDetails }) => {
     formData.append("options", JSON.stringify([optionA, optionB, optionC, optionD]));
     formData.append("answer", imageQuestion[`option${correctOption}`]);
     formData.append("image", image);
+        formData.append("description", description|| "");
+
 
     try {
       const res = await axios.post(
@@ -151,6 +156,7 @@ const CreateQuiz = ({ facultyDetails }) => {
           category: "",
           question: "",
           image: null,
+          description:"",
           optionA: "",
           optionB: "",
           optionC: "",
@@ -330,12 +336,21 @@ const CreateQuiz = ({ facultyDetails }) => {
               }
               className="border p-1 w-full rounded"
             />
-            <input
+            {/* <input
               type="text"
               placeholder="Question (optional)"
               value={imageQuestion.question}
               onChange={(e) =>
                 setImageQuestion({ ...imageQuestion, question: e.target.value })
+              }
+              className="border p-1 w-full rounded"
+            /> */}
+            <input
+              type="text"
+              placeholder="Question Description"
+              value={imageQuestion.description}
+              onChange={(e) =>
+                setImageQuestion({ ...imageQuestion, description: e.target.value })
               }
               className="border p-1 w-full rounded"
             />

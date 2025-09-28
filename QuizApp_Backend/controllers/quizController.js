@@ -16,7 +16,7 @@ export const upload = multer({ storage });
 export const addImageQuestion = async (req, res) => {
   try {
     const { quizId } = req.params;
-    const { category, options, answer } = req.body;
+    const { category, options, answer,description } = req.body;
 
     // Parse options if coming as string (from form-data)
     const parsedOptions =
@@ -68,7 +68,8 @@ if (!quizCategory) {
 
 // Push the new question
 quizCategory.questions.push({
-  question: "", // optional
+  question: "",
+    description:description || "", // optional
   image: imageUrl,
   options: parsedOptions,
   answer,
@@ -92,7 +93,7 @@ export const createQuizWithImageQuestion = async (req, res) => {
   try {
    
 
-    const { title, duration, category, question, options, answer, facultyId } = req.body;
+    const { title, duration, category, question, options, answer, facultyId ,description} = req.body;
 
     if (!title || !duration || !category || !options || !answer || !facultyId) {
       return res.status(400).json({ success: false, message: "All fields are required" });
@@ -144,6 +145,7 @@ export const createQuizWithImageQuestion = async (req, res) => {
             {
               question: question || "",
               image: imageUrl,
+              description:description || "",
               options: parsedOptions,
               answer,
               type: "image",
