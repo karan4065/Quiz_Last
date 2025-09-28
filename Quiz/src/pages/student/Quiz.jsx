@@ -135,30 +135,21 @@ const Quiz = () => {
   }, [currentQuestionIndex, questions, answers]);
 
   // ---------------- Submit ----------------
- const handleSubmit = async () => {
-  if (quizCompleted) return;
-  try {
-    const res = await axios.post(
-      `http://localhost:5000/api/quizzes/${quizId}/submit`,
-      { answers },
-      { withCredentials: true }
-    );
-
-    if (res.data?.message) {
-      alert(res.data.message);  // ✅ success alert
+  const handleSubmit = async () => {
+    if (quizCompleted) return;
+    try {
+      await axios.post(
+        `http://localhost:5000/api/quizzes/${quizId}/submit`,
+        { answers },
+        { withCredentials: true }
+      );
+      setQuizCompleted(true);
+      exitFullscreen();
+      navigate("/thank-you");
+    } catch (err) {
+      console.error(err);
     }
-
-    setQuizCompleted(true);
-    exitFullscreen();
-    navigate("/thank-you");
-  } catch (err) {
-    // ✅ Handle backend error messages
-    const message =
-      err.response?.data?.message || "Something went wrong. Please try again.";
-    alert(message);
-    console.error("Submit error:", message);
-  }
-};
+  };
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const handleLogout = () => {

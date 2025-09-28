@@ -12,53 +12,67 @@ export const upload = multer({ storage });
 
 // Add image-based question to quiz
 
-
+//add qs in existing quiz
 export const addImageQuestion = async (req, res) => {
   try {
     const { quizId } = req.params;
-    const { category, options, answer, question } = req.body;
+    const { category, options, answer } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "Image is required" });
+    // Parse options if coming as string (from form-data)
+    const parsedOptions =
+      typeof options === "string" ? JSON.parse(options) : options;
+
+    if (!parsedOptions || parsedOptions.length !== 4) {
+      return res
+        .status(400)
+        .json({ success: false, message: "4 options are required" });
+    }
+    if (!answer || !parsedOptions.includes(answer)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Answer must be one of the options" });
     }
 
-    const parsedOptions = typeof options === "string" ? JSON.parse(options) : options;
-    if (!parsedOptions || parsedOptions.length !== 4)
-      return res.status(400).json({ success: false, message: "4 options required" });
-    if (!answer || !parsedOptions.includes(answer))
-      return res.status(400).json({ success: false, message: "Answer must be one of the options" });
+    // ✅ Upload image if provided
+    let imageUrl = "";
+    if (req.file) {
+      imageUrl = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "quiz_images" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result.secure_url);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+    }
 
-    // Upload image to Cloudinary
-    const imageUrl = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: "quiz_images" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result.secure_url);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
-
-    // Find the quiz
+    // ✅ Find quiz
     const quiz = await Quiz.findById(quizId);
-    if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
-
-    // Find or create category
-    let quizCategory = quiz.categories.find((c) => c.category === category);
-    if (!quizCategory) {
-      quizCategory = { category, questions: [] };
-      quiz.categories.push(quizCategory);
+    if (!quiz) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Quiz not found" });
     }
 
-    // Add the new question
-    quizCategory.questions.push({
-      question: question || "",
-      image: imageUrl,
-      options: parsedOptions,
-      answer,
-      type: "image",
-    });
+    // ✅ Find category or create
+   let quizCategory = quiz.categories.find((c) => c.category === category);
+
+if (!quizCategory) {
+  // Push new category object directly into quiz.categories
+  quiz.categories.push({ category, questions: [] });
+  // Now get reference to the new category
+  quizCategory = quiz.categories.find((c) => c.category === category);
+}
+
+// Push the new question
+quizCategory.questions.push({
+  question: "", // optional
+  image: imageUrl,
+  options: parsedOptions,
+  answer,
+});
 
     await quiz.save();
 
@@ -72,6 +86,7 @@ export const addImageQuestion = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 export const createQuizWithImageQuestion = async (req, res) => {
   try {
