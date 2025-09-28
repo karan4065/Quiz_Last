@@ -8,7 +8,7 @@ import StudentResult from "./pages/faculty/StudentResult";
 import StudentDetails from "./pages/student/StudentDetails";
 import StudentLogin from "./pages/StudentLogin";
 import Home from "./pages/Home";
-import QuizResults from "./pages/faculty/QuizResults"; // ✅ Import QuizResults
+import QuizResults from "./pages/faculty/QuizResults";  
 import StStudentQuizResult from "./pages/student/StStudentQuizResult";
 const App = () => {
   return (
@@ -23,7 +23,7 @@ const App = () => {
         <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
         <Route path="/student-result" element={<StudentResult />} />
 <Route path="/result" element={<StStudentQuizResult/>}/>
-        {/* ✅ Route for viewing quiz results by faculty */}
+    
         <Route path="/quiz-results/:quizId" element={<QuizResults />} />
 
       </Routes>

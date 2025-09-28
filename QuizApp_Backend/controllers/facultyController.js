@@ -52,6 +52,7 @@ export const loginFaculty = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+      console.log(req.body)
         // Check for user
        const user = await Faculty.findOne({ email });
 
