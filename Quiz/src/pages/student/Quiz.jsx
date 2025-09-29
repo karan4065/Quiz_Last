@@ -15,6 +15,11 @@ const Quiz = () => {
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // New state for starting countdown and submitting loader
+  const [startingCountdown, setStartingCountdown] = useState(3);
+  const [showStartingLoader, setShowStartingLoader] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
   const { quizId } = useParams();
   const navigate = useNavigate();
 
@@ -88,6 +93,21 @@ const Quiz = () => {
     loadQuizAndProgress();
   }, [quizId]);
 
+  // ---------------- Starting Countdown ----------------
+  useEffect(() => {
+    if (!progressLoaded) return;
+
+    if (startingCountdown > 0) {
+      const timer = setTimeout(() => {
+        setStartingCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished, hide loader
+      setShowStartingLoader(false);
+    }
+  }, [startingCountdown, progressLoaded]);
+
   // ---------------- Save Progress ----------------
   const saveProgress = async () => {
     if (quizCompleted || !progressLoaded) return;
@@ -138,6 +158,7 @@ const Quiz = () => {
   const handleSubmit = async () => {
     if (quizCompleted) return;
     try {
+      setSubmitting(true);
       await axios.post(
         `http://localhost:5000/api/quizzes/${quizId}/submit`,
         { answers },
@@ -148,6 +169,7 @@ const Quiz = () => {
       navigate("/thank-you");
     } catch (err) {
       console.error(err);
+      setSubmitting(false);
     }
   };
 
@@ -194,108 +216,124 @@ const Quiz = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 z-40" onClick={() => setSidebarOpen(false)}></div>
       )}
 
+      {/* Starting Countdown Loader */}
+      {showStartingLoader && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm text-white text-9xl font-bold select-none">
+          {startingCountdown > 0 ? startingCountdown : "Go!"}
+        </div>
+      )}
+
+      {/* Submitting Loader */}
+      {submitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm text-white text-3xl font-semibold select-none">
+          Submitting...
+        </div>
+      )}
+
       {/* Main Quiz */}
-      <div className="flex flex-grow">
-        <div className="flex-grow p-6">
-          <div className="flex justify-end mb-4 text-lg font-semibold text-red-600">
-            Time Left: {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+      {!showStartingLoader && (
+        <div className="flex flex-grow">
+          <div className="flex-grow p-6">
+            <div className="flex justify-end mb-4 text-lg font-semibold text-red-600">
+              Time Left: {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+            </div>
+
+            {questions.length > 0 ? (
+              <>
+                <h2 className="text-2xl font-semibold mb-4">
+                  Q{currentQuestionIndex + 1}. {currentQ?.question || " "} <span>{currentQ?.description}</span>
+                </h2>
+
+                {/* ✅ Show Image if exists */}
+                {currentQ?.image && (
+                  <div className="mb-4 flex justify-center">
+                    <img
+                      src={currentQ.image}
+                      alt="Question"
+                      className="max-w-xs md:max-w-md border rounded-lg shadow-md "
+                    />
+                  </div>
+                )}
+
+                {/* Options */}
+                <div className="space-y-3">
+                  {currentQ.options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleOptionClick(opt)}
+                      className={`block w-full p-3 rounded-lg border transition duration-200 ${
+                        selectedOption === opt
+                          ? "bg-green-100 border-green-600"
+                          : "bg-white border-gray-300 hover:border-green-500"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Navigation */}
+                <div className="mt-6 flex justify-between">
+                  <button
+                    disabled={currentQuestionIndex === 0}
+                    onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
+                    className="bg-[#cd354d] text-white py-2 px-4 rounded hover:bg-[#f29109] disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={currentQuestionIndex === questions.length - 1}
+                    onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
+                    className="bg-[#cd354d] text-white py-2 px-4 rounded hover:bg-[#f29109] disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                  {currentQuestionIndex === questions.length - 1 && (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={answers.length !== questions.length || submitting}
+                      className={`py-2 px-4 rounded text-white ${
+                        answers.length === questions.length && !submitting
+                          ? "bg-[#cd354d] hover:bg-[#f29109]"
+                          : "bg-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      Submit
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-gray-600">Loading quiz...</p>
+            )}
           </div>
 
-          {questions.length > 0 ? (
-            <>
-              <h2 className="text-2xl font-semibold mb-4">
-                Q{currentQuestionIndex + 1}. {currentQ?.question || " "} <span>{currentQ?.description}</span>
-              </h2>
-
-              {/* ✅ Show Image if exists */}
-              {currentQ?.image && (
-                <div className="mb-4 flex justify-center">
-                  <img
-                    src={currentQ.image}
-                    alt="Question"
-                    className="max-w-xs md:max-w-md border rounded-lg shadow-md "
-                  />
-                </div>
-              )}
-
-              {/* Options */}
-              <div className="space-y-3">
-                {currentQ.options.map((opt, idx) => (
+          {/* Question Navigation */}
+          {questions.length > 0 && (
+            <div className="w-full md:w-1/4 bg-white p-4 shadow-md rounded-lg mt-6 md:mt-0 md:ml-4">
+              <h2 className="font-bold text-lg mb-4 border-b pb-2 text-center">Question Navigation</h2>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-3">
+                {questions.map((_, i) => (
                   <button
-                    key={idx}
-                    onClick={() => handleOptionClick(opt)}
-                    className={`block w-full p-3 rounded-lg border transition duration-200 ${
-                      selectedOption === opt
-                        ? "bg-green-100 border-green-600"
-                        : "bg-white border-gray-300 hover:border-green-500"
+                    key={i}
+                    onClick={() => setCurrentQuestionIndex(i)}
+                    className={`w-10 h-10 rounded-full font-semibold text-sm flex items-center justify-center transition duration-300 ease-in-out ${
+                      i === currentQuestionIndex
+                        ? "ring-2 ring-blue-500 bg-blue-100"
+                        : isAnswered(i)
+                        ? "bg-green-300 hover:bg-green-400"
+                        : "bg-yellow-100 hover:bg-yellow-200"
                     }`}
+                    title={`Question ${i + 1}`}
                   >
-                    {opt}
+                    {i + 1}
                   </button>
                 ))}
               </div>
-
-              {/* Navigation */}
-              <div className="mt-6 flex justify-between">
-                <button
-                  disabled={currentQuestionIndex === 0}
-                  onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
-                  className="bg-[#cd354d] text-white py-2 px-4 rounded hover:bg-[#f29109] disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  disabled={currentQuestionIndex === questions.length - 1}
-                  onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
-                  className="bg-[#cd354d] text-white py-2 px-4 rounded hover:bg-[#f29109] disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-                {currentQuestionIndex === questions.length - 1 && (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={answers.length !== questions.length}
-                    className={`py-2 px-4 rounded text-white ${
-                      answers.length === questions.length
-                        ? "bg-[#cd354d] hover:bg-[#f29109]"
-                        : "bg-gray-400 cursor-not-allowed"
-                    }`}
-                  >
-                    Submit
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <p className="text-center text-gray-600">Loading quiz...</p>
+            </div>
           )}
         </div>
-
-        {/* Question Navigation */}
-        {questions.length > 0 && (
-          <div className="w-full md:w-1/4 bg-white p-4 shadow-md rounded-lg mt-6 md:mt-0 md:ml-4">
-            <h2 className="font-bold text-lg mb-4 border-b pb-2 text-center">Question Navigation</h2>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-3">
-              {questions.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentQuestionIndex(i)}
-                  className={`w-10 h-10 rounded-full font-semibold text-sm flex items-center justify-center transition duration-300 ease-in-out ${
-                    i === currentQuestionIndex
-                      ? "ring-2 ring-blue-500 bg-blue-100"
-                      : isAnswered(i)
-                      ? "bg-green-300 hover:bg-green-400"
-                      : "bg-yellow-100 hover:bg-yellow-200"
-                  }`}
-                  title={`Question ${i + 1}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

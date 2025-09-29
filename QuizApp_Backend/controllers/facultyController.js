@@ -18,7 +18,7 @@ export const getQuizzesByFaculty = async (req, res) => {
     if (!quizzes.length) {
       return res.status(404).json({ success: false, message: "No quizzes found" });
     }
-
+console.log(quizzes)
     res.status(200).json({ success: true, data: quizzes });
   } catch (err) {
     console.error(err);
