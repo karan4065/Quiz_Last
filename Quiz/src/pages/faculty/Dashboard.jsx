@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Plot from "react-plotly.js";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
+import Plot from "react-plotly.js";
 
 const DEFAULT_TOTAL_STUDENTS_PER_QUIZ = 70;
 
@@ -17,18 +17,22 @@ const Dashboard = () => {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showGraph, setShowGraph] = useState(false);
 
   const sidebarRef = useRef();
 
+  // Fetch quizzes
   useEffect(() => {
     if (!facultyDetails?._id) return;
     const fetchQuizzesByFaculty = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/faculty/${facultyDetails._id}`
-        );
+       const response = await axios.get(
+  `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
+);
+
+        console.log(response.data.data)
         const data = response.data.data;
         if (Array.isArray(data)) {
           setQuizzes(data);
@@ -54,6 +58,7 @@ const Dashboard = () => {
     fetchQuizzesByFaculty();
   }, [facultyDetails]);
 
+  // Update selected quiz
   useEffect(() => {
     if (selectedQuizId && Array.isArray(quizzes)) {
       const quiz = quizzes.find((q) => q._id === selectedQuizId);
@@ -61,311 +66,167 @@ const Dashboard = () => {
     }
   }, [selectedQuizId, quizzes]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-        setSidebarOpen(false);
-      }
-    };
-    if (sidebarOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [sidebarOpen]);
-
   if (!facultyDetails) {
     return (
-      <div style={{ padding: 20, fontFamily: "'Poppins', sans-serif" }}>
+      <div className="p-6 font-sans">
         <h2>No faculty details found. Please login or navigate properly.</h2>
       </div>
     );
   }
   if (loading) {
     return (
-      <div style={{ padding: 20, fontFamily: "'Poppins', sans-serif" }}>
-        Loading quizzes...
+      <div className="p-6 font-sans">
+        <h2>Loading quizzes...</h2>
       </div>
     );
   }
   if (error) {
     return (
-      <div style={{ padding: 20, color: "red", fontFamily: "'Poppins', sans-serif" }}>
-        <h3>Error: {error}</h3>
+      <div className="p-6 font-sans text-red-600">
+        <h2>Error: {error}</h2>
       </div>
     );
   }
   if (!selectedQuiz) {
     return (
-      <div style={{ padding: 20, fontFamily: "'Poppins', sans-serif" }}>
-        <h3>No quizzes found for faculty: {facultyDetails.name || ""}</h3>
+      <div className="p-6 font-sans">
+        <h2>No quizzes found for faculty: {facultyDetails.name || ""}</h2>
       </div>
     );
   }
 
-  const totalQuizzes = Array.isArray(quizzes) ? quizzes.length : 0;
-  const completedStudentsSelectedQuiz = selectedQuiz.completed?.length || 0;
-  const remainingStudentsSelectedQuiz =
-    DEFAULT_TOTAL_STUDENTS_PER_QUIZ - completedStudentsSelectedQuiz;
+  const totalQuizzes = quizzes.length;
+  const completedStudents = selectedQuiz.completed?.length || 0;
+  const remainingStudents = DEFAULT_TOTAL_STUDENTS_PER_QUIZ - completedStudents;
 
   return (
-    <div
-      style={{
-        fontFamily: "'Poppins', sans-serif",
-        backgroundColor: "#f9fafb",
-        minHeight: "100vh",
-        display: "flex",
-      }}
-    >
+    <div className="flex bg-[#f5f6fa] min-h-screen font-sans text-gray-800">
       {/* Sidebar */}
-      <aside
-        ref={sidebarRef}
-        style={{
-          position: "fixed",
-          left: sidebarOpen ? 0 : "-280px",
-          top: 0,
-          bottom: 0,
-          width: 280,
-          backgroundColor: "#243278",
-          color: "white",
-          padding: "20px",
-          boxShadow: "2px 0 8px rgba(0,0,0,0.2)",
-          transition: "left 0.3s ease-in-out",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <h2
-            style={{
-              fontSize: 22,
-              fontWeight: "700",
-              marginBottom: 16,
-              borderBottom: "2px solid rgba(255,255,255,0.3)",
-              paddingBottom: 6,
-            }}
-          >
-            Faculty Profile
-          </h2>
-          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
-            <p>
-              <strong>Name:</strong> {facultyDetails.name}
-            </p>
-            <p>
-              <strong>Email:</strong> {facultyDetails.email}
-            </p>
-            <p>
-              <strong>UID:</strong> {facultyDetails.uid}
-            </p>
-            <p>
-              <strong>Department:</strong> {facultyDetails.department}
-            </p>
-            <p>
-              <strong>Joined On:</strong>{" "}
-              {new Date(facultyDetails.createdAt).toLocaleDateString()}
-            </p>
-            <p>
-              <strong>Last Update:</strong>{" "}
-              {new Date(facultyDetails.updatedAt).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => navigate("/")}
-          style={{
-            backgroundColor: "#cd354d",
-            border: "none",
-            padding: "12px",
-            borderRadius: 6,
-            cursor: "pointer",
-            color: "white",
-            fontWeight: "600",
-            fontSize: 16,
-            marginTop: 20,
-            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-            transition: "background-color 0.3s ease",
-          }}
-          onMouseEnter={(e) => (e.target.style.backgroundColor = "#b22f46")}
-          onMouseLeave={(e) => (e.target.style.backgroundColor = "#cd354d")}
+      {sidebarOpen && (
+        <aside
+          ref={sidebarRef}
+          className="h-screen w-1/5 bg-[#243278] text-white p-6 shadow-xl fixed z-20 flex flex-col justify-between"
         >
-          Logout
-        </button>
-      </aside>
+          <div>
+            <h2 className="text-xl font-bold mb-6 border-b pb-2 border-gray-500">
+              Faculty Profile
+            </h2>
+            <div className="space-y-3 text-sm bg-[#243278] p-4 rounded-md shadow-inner">
+              <div>
+                <span className="font-semibold">Name:</span> {facultyDetails.name}
+              </div>
+              <div>
+                <span className="font-semibold">Email:</span> {facultyDetails.email}
+              </div>
+              <div>
+                <span className="font-semibold">Department:</span>{" "}
+                {facultyDetails.department}
+              </div>
+            </div>
+          </div>
 
-      {/* Main content wrapper */}
+          <button
+            onClick={() => navigate("/")}
+            className="bg-[#cd354d] w-full py-2 rounded-md hover:bg-red-600 transition text-sm font-medium shadow-md"
+          >
+            Logout
+          </button>
+        </aside>
+      )}
+
+      {/* Main Content */}
       <div
-        style={{
-          marginLeft: sidebarOpen ? 280 : 0,
-          flexGrow: 1,
-          transition: "margin-left 0.3s ease-in-out",
-          padding: 30,
-          maxWidth: 900,
-          margin: "auto",
-          width: "100%",
-        }}
+        className={`flex-grow transition-all duration-300 ${
+          sidebarOpen ? "ml-[20%]" : ""
+        }`}
       >
-        {/* Navbar on Top */}
-        <Navbar />
-        
-        {/* Dashboard Header */}
-        <h2 style={{ color: "#243278", marginBottom: 30, marginTop: 20 }}>
-          Quiz Dashboard
-        </h2>
+        <Navbar
+          userName={`Hey, ${facultyDetails.name}`}
+          onProfileClick={() => setSidebarOpen(!sidebarOpen)}
+        />
 
-        {/* Summary Card: Total Quizzes */}
-        <div
-          style={{
-            display: "flex",
-            gap: 20,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            marginBottom: 40,
-          }}
-        >
-          <div
-            style={{
-              flex: "1 1 220px",
-              backgroundColor: "#243278",
-              color: "white",
-              borderRadius: 10,
-              padding: 20,
-              boxShadow: "0 6px 12px rgb(0 0 0 / 0.1)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginBottom: 10, fontWeight: "600" }}>Total Quizzes</h3>
-            <p style={{ fontSize: 32, fontWeight: "700", margin: 0 }}>
-              {totalQuizzes}
-            </p>
+        <main className="p-8">
+          {/* Header with Select Quiz */}
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <h2 className="text-2xl font-semibold mt-4 text-[#243278]">
+              Quiz Dashboard
+            </h2>
+            <div className="mt-4 sm:mt-0">
+              <label className="font-medium text-[#243278]">
+                Select Quiz:{" "}
+                <select
+                  value={selectedQuizId}
+                  onChange={(e) => setSelectedQuizId(e.target.value)}
+                  className="ml-2 border rounded-md px-3 py-2 shadow-sm focus:ring focus:border-[#243278]"
+                >
+                  {quizzes.map((quiz) => (
+                    <option key={quiz._id} value={quiz._id}>
+                      {quiz.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
-          <div
-            onClick={() => navigate("/faculty-dashboard", { state: { facultyDetails } })}
-            style={{
-              flex: "1 1 220px",
-              backgroundColor: "#4e73df",
-              borderRadius: 10,
-              padding: 20,
-              boxShadow: "0 6px 12px rgb(0 0 0 / 0.1)",
-              color: "white",
-              fontWeight: "700",
-              fontSize: 20,
-              textAlign: "center",
-              cursor: "pointer",
-              userSelect: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background-color 0.3s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2e4acb")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4e73df")}
-            title="Create a new quiz"
-          >
-            + Create Quiz
-          </div>
-        </div>
-
-        {/* Quiz Selector */}
-        <div style={{ marginBottom: 30, textAlign: "center" }}>
-          <label style={{ fontWeight: "600", fontSize: 16 }}>
-            Select Quiz:{" "}
-            <select
-              value={selectedQuizId}
-              onChange={(e) => setSelectedQuizId(e.target.value)}
-              style={{
-                fontSize: 16,
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid #ccc",
-                minWidth: 200,
-                cursor: "pointer",
-              }}
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+            <div className="bg-[#243278] text-white rounded-lg p-6 shadow-md text-center">
+              <h3 className="font-semibold mb-2">Total Quizzes</h3>
+              <p className="text-3xl font-bold">{totalQuizzes}</p>
+            </div>
+            <div
+              onClick={() =>
+                navigate("/faculty-dashboard", { state: { facultyDetails } })
+              }
+              className="bg-[#243278] text-xl font-semibold text-white rounded-lg p-6 shadow-md text-center cursor-pointer hover:bg-[#1e285d] transition"
             >
-              {quizzes.map((quiz) => (
-                <option key={quiz._id} value={quiz._id}>
-                  {quiz.title}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+              + Create Quiz
+            </div>
+          </div>
 
-        {/* Selected Quiz Stats */}
-        <div
-          style={{
-            display: "flex",
-            gap: 20,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            marginBottom: 40,
-          }}
+          {/* Stats */}
+            <div className="grid grid-cols-1 gap-6 mt-8">
+      {/* Single Box */}
+      <div className="bg-[#243278] text-white rounded-lg p-6 shadow-md text-center">
+        <h3 className="font-semibold mb-2">Enrolled Students</h3>
+        <p className="text-2xl font-bold">
+          {DEFAULT_TOTAL_STUDENTS_PER_QUIZ}
+        </p>
+        <button
+          onClick={() => setShowGraph(!showGraph)}
+          className="mt-4 px-4 py-2 bg-white text-[#243278] font-semibold rounded-lg shadow hover:bg-gray-100 transition"
         >
-          <div
-            style={{
-              flex: "1 1 200px",
-              backgroundColor: "#1cc88a",
-              color: "white",
-              borderRadius: 10,
-              padding: 20,
-              boxShadow: "0 6px 12px rgb(0 0 0 / 0.1)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginBottom: 10, fontWeight: "600" }}>
-              Completed Students
-            </h3>
-            <p style={{ fontSize: 28, fontWeight: "700", margin: 0 }}>
-              {completedStudentsSelectedQuiz} / {DEFAULT_TOTAL_STUDENTS_PER_QUIZ}
-            </p>
-          </div>
-          <div
-            style={{
-              flex: "1 1 200px",
-              backgroundColor: "#e74a3b",
-              color: "white",
-              borderRadius: 10,
-              padding: 20,
-              boxShadow: "0 6px 12px rgb(0 0 0 / 0.1)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginBottom: 10, fontWeight: "600" }}>
-              Remaining Students
-            </h3>
-            <p style={{ fontSize: 28, fontWeight: "700", margin: 0 }}>
-              {remainingStudentsSelectedQuiz} / {DEFAULT_TOTAL_STUDENTS_PER_QUIZ}
-            </p>
-          </div>
-        </div>
+          {showGraph ? "Hide Progress" : "Show Progress"}
+        </button>
+      </div>
 
-        {/* Plotly Pie Chart */}
-        <div style={{ maxWidth: 500, margin: "0 auto" }}>
+      {/* Bar Graph (only visible when button clicked) */}
+      {showGraph && (
+        <div className="mt-10 flex justify-center">
           <Plot
             data={[
               {
-                values: [completedStudentsSelectedQuiz, remainingStudentsSelectedQuiz],
-                labels: ["Completed", "Remaining"],
-                type: "pie",
-                marker: {
-                  colors: ["#1cc88a", "#e74a3b"],
-                },
-                textinfo: "label+percent",
-                insidetextorientation: "radial",
+                x: ["Completed", "Remaining"],
+                y: [completedStudents, remainingStudents],
+                type: "bar",
+                marker: { color: ["#243278", "#f44336"] },
+                width: 0.4,
               },
             ]}
             layout={{
-              height: 350,
-              width: 350,
-              margin: { t: 0, b: 0, l: 0, r: 0 },
+              title: "Quiz Completion Status",
+              height: 400,
+              width: 400,
+              margin: { t: 40, b: 40, l: 40, r: 20 },
               font: { family: "'Poppins', sans-serif" },
             }}
             config={{ displayModeBar: false }}
           />
         </div>
+      )}
+    </div>
+        </main>
       </div>
     </div>
   );
