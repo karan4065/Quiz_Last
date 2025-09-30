@@ -5,10 +5,24 @@ const QuizSchema = new Schema({
     type: String,
     required: true,
   },
+  subject: {                // Subject of the quiz
+    type: String,
+    required: true,
+  },
   duration: {
     type: Number,
     required: true,
-    default: 30,
+    default: 30,            // Duration in minutes
+  },
+  limit: {                  // Max number of students allowed
+    type: Number,
+    required: true,
+    default: 80,
+  },
+  session: {                // Academic session
+    type: String,
+    required: true,
+    default: "2025-2026",
   },
   categories: [
     {
@@ -19,9 +33,9 @@ const QuizSchema = new Schema({
       questions: [
         {
           _id: { type: Schema.Types.ObjectId, auto: true },
-          question: { type: String }, 
-          image: { type: String },    
-          description:{type:String},
+          question: { type: String },
+          image: { type: String },
+          description: { type: String },
           options: { type: [String], required: true },
           answer: {
             type: String,
@@ -30,8 +44,7 @@ const QuizSchema = new Schema({
               validator: function (v) {
                 return this.options.includes(v);
               },
-              message: (props) =>
-                `${props.value} is not present in options!`,
+              message: (props) => `${props.value} is not present in options!`,
             },
           },
         },

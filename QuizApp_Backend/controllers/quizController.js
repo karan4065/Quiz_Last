@@ -6,136 +6,92 @@ import Papa from "papaparse";
 import cloudinary from "../config/cloudinary.js";
 import multer from "multer";
 
-
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 
-// Add image-based question to quiz
-
-//add qs in existing quiz
+// ---------------- Add image-based question to existing quiz ----------------
 export const addImageQuestion = async (req, res) => {
   try {
     const { quizId } = req.params;
-    const { category, options, answer,description } = req.body;
+    const { category, options, answer, description } = req.body;
 
-    // Parse options if coming as string (from form-data)
-    const parsedOptions =
-      typeof options === "string" ? JSON.parse(options) : options;
-
+    const parsedOptions = typeof options === "string" ? JSON.parse(options) : options;
     if (!parsedOptions || parsedOptions.length !== 4) {
-      return res
-        .status(400)
-        .json({ success: false, message: "4 options are required" });
+      return res.status(400).json({ success: false, message: "4 options are required" });
     }
     if (!answer || !parsedOptions.includes(answer)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Answer must be one of the options" });
+      return res.status(400).json({ success: false, message: "Answer must be one of the options" });
     }
 
-    // ✅ Upload image if provided
     let imageUrl = "";
     if (req.file) {
       imageUrl = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "quiz_images" },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result.secure_url);
-          }
+          (error, result) => error ? reject(error) : resolve(result.secure_url)
         );
         stream.end(req.file.buffer);
       });
     }
 
-    // ✅ Find quiz
     const quiz = await Quiz.findById(quizId);
-    if (!quiz) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Quiz not found" });
+    if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+
+    let quizCategory = quiz.categories.find(c => c.category === category);
+    if (!quizCategory) {
+      quiz.categories.push({ category, questions: [] });
+      quizCategory = quiz.categories.find(c => c.category === category);
     }
 
-    // ✅ Find category or create
-   let quizCategory = quiz.categories.find((c) => c.category === category);
-
-if (!quizCategory) {
-  // Push new category object directly into quiz.categories
-  quiz.categories.push({ category, questions: [] });
-  // Now get reference to the new category
-  quizCategory = quiz.categories.find((c) => c.category === category);
-}
-
-// Push the new question
-quizCategory.questions.push({
-  question: "",
-    description:description || "", // optional
-  image: imageUrl,
-  options: parsedOptions,
-  answer,
-});
+    quizCategory.questions.push({
+      question: "",
+      description: description || "",
+      image: imageUrl,
+      options: parsedOptions,
+      answer,
+    });
 
     await quiz.save();
+    res.status(201).json({ success: true, message: "Image-based question added successfully", data: quiz });
 
-    res.status(201).json({
-      success: true,
-      message: "Image-based question added successfully",
-      data: quiz,
-    });
   } catch (err) {
     console.error("Error adding image question:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
-
+// ---------------- Create quiz with a single image-based question ----------------
 export const createQuizWithImageQuestion = async (req, res) => {
   try {
-   
+    const { title, duration, subject, category, question, options, answer, facultyId, description } = req.body;
 
-    const { title, duration, category, question, options, answer, facultyId ,description} = req.body;
-
-    if (!title || !duration || !category || !options || !answer || !facultyId) {
+    if (!title || !duration || !subject || !category || !options || !answer || !facultyId) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // Parse options (because it's coming as a JSON string)
     let parsedOptions;
-    try {
-      parsedOptions = JSON.parse(options); // ["q","w","e","r"]
-    } catch (e) {
-      return res.status(400).json({ success: false, message: "Invalid options format" });
-    }
+    try { parsedOptions = JSON.parse(options); } 
+    catch (e) { return res.status(400).json({ success: false, message: "Invalid options format" }); }
 
     if (!Array.isArray(parsedOptions) || parsedOptions.length < 2) {
       return res.status(400).json({ success: false, message: "At least 2 options are required" });
     }
-
     if (!parsedOptions.includes(answer)) {
       return res.status(400).json({ success: false, message: "Answer must be one of the options" });
     }
-
-    // Upload image
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "Image is required" });
-    }
+    if (!req.file) return res.status(400).json({ success: false, message: "Image is required" });
 
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: "quiz_images" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
+        (error, result) => error ? reject(error) : resolve(result)
       );
       stream.end(req.file.buffer);
     });
 
-    const imageUrl = uploadResult.secure_url;
-
-    // Build quiz object
     const quiz = new Quiz({
       title,
+      subject,
       duration,
       createdBy: facultyId,
       categories: [
@@ -144,8 +100,8 @@ export const createQuizWithImageQuestion = async (req, res) => {
           questions: [
             {
               question: question || "",
-              image: imageUrl,
-              description:description || "",
+              image: uploadResult.secure_url,
+              description: description || "",
               options: parsedOptions,
               answer,
               type: "image",
@@ -156,41 +112,29 @@ export const createQuizWithImageQuestion = async (req, res) => {
     });
 
     await quiz.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Quiz created with image question",
-      data: quiz,
-    });
+    res.status(201).json({ success: true, message: "Quiz created with image question", data: quiz });
 
   } catch (err) {
     console.error("Error in createQuizWithImageQuestion:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: err.message,
-    });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
-// ---------------- Create Quiz ----------------
+// ---------------- Create quiz (general) ----------------
 export const createQuiz = async (req, res) => {
   try {
-    const { title, duration, categories, createdBy } = req.body;
-
-    if (!title) return res.status(400).json({ success: false, message: "Title required" });
+    const { title, subject, duration, categories, createdBy } = req.body;
+    if (!title || !subject) return res.status(400).json({ success: false, message: "Title and subject required" });
     if (!categories?.length) return res.status(400).json({ success: false, message: "Categories required" });
 
     const isValid = categories.every(cat =>
       cat.category && cat.questions?.length &&
       cat.questions.every(q => q.question && q.options?.length && q.answer && q.options.includes(q.answer))
     );
-
     if (!isValid) return res.status(400).json({ success: false, message: "Invalid questions/options" });
 
-    const quiz = new Quiz({ title, duration: duration || 15, categories, createdBy });
+    const quiz = new Quiz({ title, subject, duration: duration || 15, categories, createdBy });
     await quiz.save();
-
     res.status(201).json({ success: true, message: "Quiz created", data: quiz });
 
   } catch (error) {
@@ -201,8 +145,10 @@ export const createQuiz = async (req, res) => {
 // ---------------- Create Quiz via CSV ----------------
 export const createQuizByFaculty = async (req, res) => {
   try {
-    const { title, facultyId, csvData, duration } = req.body;
-    if (!title || !facultyId || !csvData) return res.status(400).json({ success: false, message: "Missing fields" });
+    const { title, subject, facultyId, csvData, duration } = req.body;
+    if (!title || !subject || !facultyId || !csvData) {
+      return res.status(400).json({ success: false, message: "Missing fields" });
+    }
 
     const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
     if (!parsed.data?.length) return res.status(400).json({ success: false, message: "CSV empty/invalid" });
@@ -228,16 +174,18 @@ export const createQuizByFaculty = async (req, res) => {
     });
 
     const categories = Object.keys(categoriesMap).map(cat => ({ category: cat, questions: categoriesMap[cat] }));
-    const quiz = new Quiz({ title, duration: duration || 15, categories, createdBy: facultyId });
+    const quiz = new Quiz({ title, subject, duration: duration || 15, categories, createdBy: facultyId });
     await quiz.save();
 
-    res.status(201).json({ success: true, message: "Quiz created", data: quiz });
+    res.status(201).json({ success: true, message: "Quiz created via CSV", data: quiz });
 
   } catch (err) {
+    console.error("CSV Quiz creation error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// ---------------- Get quiz and progress ----------------
 export const getQuiz = async (req, res) => {
   const { quizId } = req.params;
   const studentId = req.user?._id;
@@ -249,15 +197,10 @@ export const getQuiz = async (req, res) => {
 
     let progress = await QuizProgress.findOne({ student: studentId, quiz: quizId });
 
-    // If progress exists and status is true, quiz already submitted → block
     if (progress && progress.status === true) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "You have already attempted this quiz." 
-      });
+      return res.status(403).json({ success: false, message: "You have already attempted this quiz." });
     }
 
-    // If no progress, create one
     if (!progress) {
       progress = await QuizProgress.create({
         student: studentId,
@@ -276,10 +219,8 @@ export const getQuiz = async (req, res) => {
   }
 };
 
-
 // ---------------- Save Progress ----------------
 export const saveProgress = async (req, res) => {
- 
   const { currentQuestionIndex, answers, timeLeft } = req.body;
   const studentId = req.user._id;
   try {
@@ -291,51 +232,34 @@ export const saveProgress = async (req, res) => {
     await progress.save();
     res.json({ success: true });
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
-}
+};
 
 // ---------------- Get Quiz Submissions ----------------
 export const getQuizSubmissions = async (req, res) => {
   const { quizId } = req.params;
-
   try {
-    // Fetch the quiz with questions and correct answers
     const quiz = await Quiz.findById(quizId);
     if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
 
-    // Fetch submissions
     const submissions = await QuizSubmission.find({ quizId }).populate("studentId", "name studentId");
 
-    // Map answers to 1 or 0 based on correctness
-    const submissionsWithScore = submissions.map((sub) => {
-      // Create a lookup for correct answers
+    const submissionsWithScore = submissions.map(sub => {
       const correctAnswers = {};
-      quiz.categories.forEach((cat) => {
-        cat.questions.forEach((q) => {
-          correctAnswers[q._id.toString()] = q.answer;
-        });
-      });
+      quiz.categories.forEach(cat => cat.questions.forEach(q => {
+        correctAnswers[q._id.toString()] = q.answer;
+      }));
 
-      // Map each answer to 1 (correct) or 0 (incorrect)
-      const answersWithScore = sub.answers.map((a) => ({
+      const answersWithScore = sub.answers.map(a => ({
         questionId: a.questionId,
         selectedOption: a.selectedOption,
         score: correctAnswers[a.questionId.toString()] === a.selectedOption ? 1 : 0
       }));
 
-      // Calculate total score
       const totalScore = answersWithScore.reduce((sum, a) => sum + a.score, 0);
-
-      return {
-        _id: sub._id,
-        studentId: sub.studentId,
-        submittedAt: sub.submittedAt,
-        answers: answersWithScore,
-        totalScore
-      };
+      return { _id: sub._id, studentId: sub.studentId, submittedAt: sub.submittedAt, answers: answersWithScore, totalScore };
     });
 
     res.status(200).json({ success: true, data: submissionsWithScore });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -346,216 +270,123 @@ export const getQuizSubmissions = async (req, res) => {
 export const deleteInactiveProgress = async () => {
   try {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-    const result = await QuizProgress.deleteMany({ completed: false, updatedAt: { $lt: thirtyMinutesAgo } });
- 
+    await QuizProgress.deleteMany({ completed: false, updatedAt: { $lt: thirtyMinutesAgo } });
   } catch (err) {
     console.error(err);
   }
 };
 
-// Get answer distribution for a specific quiz and student (dynamic options)
+// ---------------- Answer distribution ----------------
 export const getQuizAnswerDistribution = async (req, res) => {
-    const { quizId, studentId } = req.params;
+  const { quizId, studentId } = req.params;
+  try {
+    const submission = await QuizSubmission.findOne({ quizId, studentId });
+    if (!submission) return res.status(404).json({ success: false, message: "No submission found" });
 
-    try {
-        const submission = await QuizSubmission.findOne({ quizId, studentId });
+    const totalAnswers = submission.answers.length;
+    const answerCount = {};
+    submission.answers.forEach(ans => {
+      if (!ans.selectedOption) return;
+      answerCount[ans.selectedOption] = (answerCount[ans.selectedOption] || 0) + 1;
+    });
 
-        if (!submission) {
-            return res.status(404).json({
-                success: false,
-                message: "No submission found for this quiz by the specified student"
-            });
-        }
-
-        const totalAnswers = submission.answers.length;
-        const answerCount = {};
-
-        submission.answers.forEach(answer => {
-            const option = answer.selectedOption;
-            if (!option) return;
-            answerCount[option] = (answerCount[option] || 0) + 1;
-        });
-
-        const answerDistribution = {};
-        for (let opt in answerCount) {
-            answerDistribution[opt] = {
-                count: answerCount[opt],
-                percentage: totalAnswers > 0 ? ((answerCount[opt] / totalAnswers) * 100).toFixed(2) : 0
-            };
-        }
-
-        res.json({
-            success: true,
-            message: "Answer distribution fetched successfully",
-            data: answerDistribution,
-            submission
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
+    const answerDistribution = {};
+    for (let opt in answerCount) {
+      answerDistribution[opt] = {
+        count: answerCount[opt],
+        percentage: totalAnswers > 0 ? ((answerCount[opt] / totalAnswers) * 100).toFixed(2) : 0
+      };
     }
+
+    res.json({ success: true, message: "Answer distribution fetched successfully", data: answerDistribution, submission });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
 };
 
-// Get category-wise answer distribution for a specific quiz (dynamic options)
+// ---------------- Category-wise answer distribution ----------------
 export const getCategoryWiseAnswerDistribution = async (req, res) => {
-    const { quizId } = req.params;
-
-    try {
-        const results = await QuizSubmission.aggregate([
-            { $match: { quizId: new mongoose.Types.ObjectId(quizId) } },
-            { $unwind: "$answers" },
-            {
-                $lookup: {
-                    from: "quizzes",
-                    localField: "quizId",
-                    foreignField: "_id",
-                    as: "quizDetails"
-                }
-            },
-            { $unwind: "$quizDetails" },
-            { $unwind: "$quizDetails.categories" },
-            { $unwind: "$quizDetails.categories.questions" },
-            {
-                $match: {
-                    $expr: { $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"] }
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        category: "$quizDetails.categories.category",
-                        selectedOption: "$answers.selectedOption"
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $group: {
-                    _id: "$_id.category",
-                    options: { $push: { option: "$_id.selectedOption", count: "$count" } },
-                    total: { $sum: "$count" }
-                }
-            },
-            {
-                $project: {
-                    category: "$_id",
-                    answers: {
-                        $arrayToObject: {
-                            $map: {
-                                input: "$options",
-                                as: "opt",
-                                in: {
-                                    k: "$$opt.option",
-                                    v: {
-                                        count: "$$opt.count",
-                                        percentage: { $round: [{ $multiply: [{ $divide: ["$$opt.count", "$total"] }, 100] }, 2] }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        ]);
-
-        res.json({
-            success: true,
-            message: "Category-wise answer distribution fetched successfully",
-            data: results
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
-    }
+  const { quizId } = req.params;
+  try {
+    const results = await QuizSubmission.aggregate([
+      { $match: { quizId: new mongoose.Types.ObjectId(quizId) } },
+      { $unwind: "$answers" },
+      { $lookup: { from: "quizzes", localField: "quizId", foreignField: "_id", as: "quizDetails" } },
+      { $unwind: "$quizDetails" },
+      { $unwind: "$quizDetails.categories" },
+      { $unwind: "$quizDetails.categories.questions" },
+      { $match: { $expr: { $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"] } } },
+      { $group: { _id: { category: "$quizDetails.categories.category", selectedOption: "$answers.selectedOption" }, count: { $sum: 1 } } },
+      { $group: { _id: "$_id.category", options: { $push: { option: "$_id.selectedOption", count: "$count" } }, total: { $sum: "$count" } } },
+      { $project: { category: "$_id", answers: { $arrayToObject: { $map: { input: "$options", as: "opt", in: { k: "$$opt.option", v: { count: "$$opt.count", percentage: { $round: [{ $multiply: [{ $divide: ["$$opt.count", "$total"] }, 100] }, 2] } } } } } } } }
+    ]);
+    res.json({ success: true, message: "Category-wise answer distribution fetched successfully", data: results });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
 };
 
-// Category-wise answer distribution for a student (dynamic options)
+// ---------------- Category-wise answer distribution for a student ----------------
 export const getCategoryWiseAnswerDistributionForStudent = async (req, res) => {
-    const { submissionId } = req.params;
-    const { studentId } = req.body;
-
-    try {
-        const results = await QuizSubmission.aggregate([
-            { $match: { _id: new mongoose.Types.ObjectId(submissionId), studentId: new mongoose.Types.ObjectId(studentId) } },
-            { $unwind: "$answers" },
-            {
-                $lookup: {
-                    from: "quizzes",
-                    localField: "quizId",
-                    foreignField: "_id",
-                    as: "quizDetails"
+  const { submissionId } = req.params;
+  const { studentId } = req.body;
+  try {
+    const results = await QuizSubmission.aggregate([
+  { $match: { quizId: new mongoose.Types.ObjectId(quizId) } },
+  { $unwind: "$answers" },
+  { $lookup: { from: "quizzes", localField: "quizId", foreignField: "_id", as: "quizDetails" } },
+  { $unwind: "$quizDetails" },
+  { $unwind: "$quizDetails.categories" },
+  { $unwind: "$quizDetails.categories.questions" },
+  { $match: { $expr: { $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"] } } },
+  { $group: { _id: { category: "$quizDetails.categories.category", selectedOption: "$answers.selectedOption" }, count: { $sum: 1 } } },
+  { $group: { _id: "$_id.category", options: { $push: { option: "$_id.selectedOption", count: "$count" } }, total: { $sum: "$count" } } },
+  {
+    $project: {
+      _id: 0,
+      category: "$_id",
+      answers: {
+        $arrayToObject: {
+          $map: {
+            input: "$options",
+            as: "opt",
+            in: {
+              k: "$$opt.option",
+              v: {
+                count: "$$opt.count",
+                percentage: {
+                  $cond: [
+                    { $eq: ["$total", 0] },
+                    0,
+                    { $round: [{ $multiply: [{ $divide: ["$$opt.count", "$total"] }, 100] }, 2] }
+                  ]
                 }
-            },
-            { $unwind: "$quizDetails" },
-            { $unwind: "$quizDetails.categories" },
-            { $unwind: "$quizDetails.categories.questions" },
-            {
-                $match: { $expr: { $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"] } }
-            },
-            {
-                $group: {
-                    _id: { category: "$quizDetails.categories.category", selectedOption: "$answers.selectedOption" },
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $group: {
-                    _id: "$_id.category",
-                    options: { $push: { option: "$_id.selectedOption", count: "$count" } },
-                    total: { $sum: "$count" }
-                }
-            },
-            {
-                $project: {
-                    category: "$_id",
-                    answers: {
-                        $arrayToObject: {
-                            $map: {
-                                input: "$options",
-                                as: "opt",
-                                in: {
-                                    k: "$$opt.option",
-                                    v: {
-                                        count: "$$opt.count",
-                                        percentage: { $round: [{ $multiply: [{ $divide: ["$$opt.count", "$total"] }, 100] }, 2] }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    _id: 0
-                }
+              }
             }
-        ]);
-
-        res.json({
-            success: true,
-            message: "Category-wise distribution for student fetched successfully",
-            data: results
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
+          }
+        }
+      }
     }
+  }
+]);
+
+   res.json({ success: true, message: "Category-wise distribution for student fetched successfully", data: results });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
 };
 
+// ---------------- Delete quiz ----------------
 export const deleteQuiz = async (req, res) => {
   try {
-     
     const quiz = await Quiz.findByIdAndDelete(req.params.quizId);
-    if (!quiz) {
-      return res.status(404).json({ success: false, message: "Quiz not found" });
-    }
-
+    if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
     res.json({ success: true, message: "Quiz deleted successfully" });
-
   } catch (err) {
     console.error("Delete error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-// // Export all functions

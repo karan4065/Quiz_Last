@@ -3,8 +3,32 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
 import Plot from "react-plotly.js";
+import { motion } from "framer-motion";
 
-const DEFAULT_TOTAL_STUDENTS_PER_QUIZ = 70;
+// Animated number component
+const AnimatedNumber = ({ value }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    const duration = 800;
+    const increment = Math.ceil(end / (duration / 16));
+
+    const counter = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        start = end;
+        clearInterval(counter);
+      }
+      setCount(start);
+    }, 16);
+
+    return () => clearInterval(counter);
+  }, [value]);
+
+  return <span>{count}</span>;
+};
 
 const Dashboard = () => {
   const location = useLocation();
@@ -12,106 +36,177 @@ const Dashboard = () => {
   const facultyDetails = location.state?.facultyDetails;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [role, setRole] = useState(facultyDetails?.isAdmin ? "admin" : "faculty");
+
+  // Faculty and quizzes
   const [quizzes, setQuizzes] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState("Computer Science");
+  const [subjectQuizzes, setSubjectQuizzes] = useState([]);
   const [selectedQuizId, setSelectedQuizId] = useState("");
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+
+  // Admin-specific
+  const [faculties, setFaculties] = useState([]);
+  const [selectedFacultyId, setSelectedFacultyId] = useState(null);
+  const [csvFile, setCsvFile] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showGraph, setShowGraph] = useState(false);
 
   const sidebarRef = useRef();
 
   // Fetch quizzes
-  useEffect(() => {
-    if (!facultyDetails?._id) return;
-    const fetchQuizzesByFaculty = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-       const response = await axios.get(
-  `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
-);
-
-        console.log(response.data.data)
-        const data = response.data.data;
-        if (Array.isArray(data)) {
-          setQuizzes(data);
-          if (data.length > 0) {
-            setSelectedQuizId(data[0]._id);
-            setSelectedQuiz(data[0]);
-          } else {
-            setSelectedQuiz(null);
-          }
-        } else {
-          setError("Unexpected response data");
-          setQuizzes([]);
-          setSelectedQuiz(null);
-        }
-      } catch (err) {
-        setError("Failed to fetch quizzes");
-        setQuizzes([]);
-        setSelectedQuiz(null);
-      } finally {
-        setLoading(false);
+  const fetchQuizzes = async (facultyId = null) => {
+    if (!facultyDetails?._id && role === "faculty") return;
+    setLoading(true);
+    setError(null);
+    try {
+      let url = "";
+      if (role === "faculty") {
+        url = `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`;
+      } else if (role === "admin" && facultyId) {
+        url = `http://localhost:5000/api/faculty/${facultyId}/quizzes`;
       }
-    };
-    fetchQuizzesByFaculty();
-  }, [facultyDetails]);
-
-  // Update selected quiz
-  useEffect(() => {
-    if (selectedQuizId && Array.isArray(quizzes)) {
-      const quiz = quizzes.find((q) => q._id === selectedQuizId);
-      setSelectedQuiz(quiz || null);
+      const response = await axios.get(url);
+      const data = response.data.data || [];
+      setQuizzes(data);
+      setSelectedQuizId(data[0]?._id || "");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch quizzes");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Fetch all faculties for admin
+  const fetchAllFaculties = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("http://localhost:5000/api/faculty/getall");
+      setFaculties(response.data.data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch faculties");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Admin functions
+  const handleDeleteFaculty = async (id) => {
+    if (!window.confirm("Delete this faculty?")) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/faculty/delete/${id}`);
+      alert("Faculty deleted successfully");
+      fetchAllFaculties();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete faculty");
+    }
+  };
+
+  const handleUpdateFaculty = (faculty) => {
+    const name = prompt("Update name:", faculty.name) || faculty.name;
+    const email = prompt("Update email:", faculty.email) || faculty.email;
+    axios
+      .put(`http://localhost:5000/api/faculty/update/${faculty._id}`, { name, email })
+      .then(() => {
+        alert("Faculty updated!");
+        fetchAllFaculties();
+      })
+      .catch(() => alert("Failed to update"));
+  };
+
+  const handleUploadCSV = async () => {
+    if (!csvFile) return alert("Select CSV file");
+    const formData = new FormData();
+    formData.append("file", csvFile);
+    try {
+      await axios.post("http://localhost:5000/api/faculty/upload-csv", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      alert("CSV uploaded!");
+      fetchAllFaculties();
+    } catch (err) {
+      console.error(err);
+      alert("CSV upload failed");
+    }
+  };
+
+  useEffect(() => {
+    if (role === "faculty") fetchQuizzes();
+    if (role === "admin") fetchAllFaculties();
+  }, [facultyDetails, role]);
+
+  useEffect(() => {
+    if (!selectedSubject) return;
+    const filtered = quizzes.filter((q) => q.subject === selectedSubject);
+    setSubjectQuizzes(filtered);
+    if (filtered.length > 0 && !selectedQuizId) {
+      setSelectedQuizId(filtered[0]._id);
+    }
+  }, [selectedSubject, quizzes, selectedQuizId]);
+
+  useEffect(() => {
+    if (!selectedQuizId) return;
+    const quiz = quizzes.find((q) => q._id === selectedQuizId);
+    setSelectedQuiz(quiz || null);
   }, [selectedQuizId, quizzes]);
 
-  if (!facultyDetails) {
-    return (
-      <div className="p-6 font-sans">
-        <h2>No faculty details found. Please login or navigate properly.</h2>
-      </div>
-    );
-  }
-  if (loading) {
-    return (
-      <div className="p-6 font-sans">
-        <h2>Loading quizzes...</h2>
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="p-6 font-sans text-red-600">
-        <h2>Error: {error}</h2>
-      </div>
-    );
-  }
-  if (!selectedQuiz) {
-    return (
-      <div className="p-6 font-sans">
-        <h2>No quizzes found for faculty: {facultyDetails.name || ""}</h2>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setSidebarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  const totalQuizzes = quizzes.length;
-  const completedStudents = selectedQuiz.completed?.length || 0;
-  const remainingStudents = DEFAULT_TOTAL_STUDENTS_PER_QUIZ - completedStudents;
+  const handleLogout = () => navigate("/");
+  const handleCreateQuiz = () =>
+    navigate("/faculty-dashboard", { state: { facultyDetails } });
+
+  const handleDeleteQuiz = async (quizId) => {
+    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/quiz/${quizId}`);
+      alert("Quiz deleted successfully!");
+      fetchQuizzes(selectedFacultyId || undefined);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete quiz");
+    }
+  };
+
+  const handleUpdateQuiz = (quizId) => {
+    navigate("/update-quiz", {
+      state: { quizId, facultyDetails, role, selectedFacultyId },
+    });
+  };
+
+  if (!facultyDetails)
+    return <div className="p-6 font-sans text-gray-800">No faculty details found.</div>;
+  if (loading) return <div className="p-6 font-sans text-gray-800">Loading...</div>;
+  if (error) return <div className="p-6 font-sans text-red-600">Error: {error}</div>;
+
+  const completedStudents = selectedQuiz?.completed?.length || 0;
+  const remainingStudents = (selectedQuiz?.limit || 70) - completedStudents;
 
   return (
-    <div className="flex bg-[#f5f6fa] min-h-screen font-sans text-gray-800">
+    <div className="flex min-h-screen font-sans bg-gray-50 text-gray-800">
       {/* Sidebar */}
       {sidebarOpen && (
         <aside
           ref={sidebarRef}
-          className="h-screen w-1/5 bg-[#243278] text-white p-6 shadow-xl fixed z-20 flex flex-col justify-between"
+          className="h-screen w-64 bg-white p-6 fixed z-20 flex flex-col justify-between shadow-xl rounded-tr-xl rounded-br-xl border-l-2 border-blue-500"
         >
           <div>
-            <h2 className="text-xl font-bold mb-6 border-b pb-2 border-gray-500">
+            <h2 className="text-xl font-bold mb-6 border-b border-blue-500 pb-2">
               Faculty Profile
             </h2>
-            <div className="space-y-3 text-sm bg-[#243278] p-4 rounded-md shadow-inner">
+            <div className="space-y-3 text-sm bg-gray-100 p-4 rounded-md shadow-inner">
               <div>
                 <span className="font-semibold">Name:</span> {facultyDetails.name}
               </div>
@@ -119,113 +214,303 @@ const Dashboard = () => {
                 <span className="font-semibold">Email:</span> {facultyDetails.email}
               </div>
               <div>
-                <span className="font-semibold">Department:</span>{" "}
-                {facultyDetails.department}
+                <span className="font-semibold">Department:</span> {facultyDetails.department}
               </div>
+              {facultyDetails.isAdmin && (
+                <div>
+                  <span className="font-semibold">Role:</span>{" "}
+                  <select
+                    value={role}
+                    onChange={(e) => {
+                      setRole(e.target.value);
+                      setSelectedFacultyId(null);
+                    }}
+                    className="ml-2 border border-blue-500 rounded-md px-2 py-1 bg-white text-blue-500"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="faculty">Faculty</option>
+                  </select>
+                </div>
+              )}
+              {!facultyDetails.isAdmin && (
+                <div>
+                  <span className="font-semibold">Role:</span> Faculty
+                </div>
+              )}
             </div>
           </div>
-
           <button
-            onClick={() => navigate("/")}
-            className="bg-[#cd354d] w-full py-2 rounded-md hover:bg-red-600 transition text-sm font-medium shadow-md"
+            onClick={handleLogout}
+            className="bg-blue-500 hover:brightness-110 w-full py-2 rounded-md transition font-medium shadow-md mt-6 text-white"
           >
             Logout
           </button>
         </aside>
       )}
 
-      {/* Main Content */}
-      <div
-        className={`flex-grow transition-all duration-300 ${
-          sidebarOpen ? "ml-[20%]" : ""
-        }`}
-      >
+      <div className="flex-grow">
         <Navbar
           userName={`Hey, ${facultyDetails.name}`}
           onProfileClick={() => setSidebarOpen(!sidebarOpen)}
         />
 
         <main className="p-8">
-          {/* Header with Select Quiz */}
-          <div className="flex flex-col sm:flex-row justify-between items-center">
-            <h2 className="text-2xl font-semibold mt-4 text-[#243278]">
-              Quiz Dashboard
-            </h2>
-            <div className="mt-4 sm:mt-0">
-              <label className="font-medium text-[#243278]">
-                Select Quiz:{" "}
-                <select
-                  value={selectedQuizId}
-                  onChange={(e) => setSelectedQuizId(e.target.value)}
-                  className="ml-2 border rounded-md px-3 py-2 shadow-sm focus:ring focus:border-[#243278]"
+          {/* Admin Section */}
+          {role === "admin" && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold mb-4">All Faculties</h2>
+
+              {/* CSV Upload */}
+              <div className="mb-4">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setCsvFile(e.target.files[0])}
+                  className="mr-2"
+                />
+                <button
+                  onClick={handleUploadCSV}
+                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
                 >
-                  {quizzes.map((quiz) => (
-                    <option key={quiz._id} value={quiz._id}>
-                      {quiz.title}
-                    </option>
+                  Upload CSV
+                </button>
+              </div>
+
+              {/* Faculty Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {faculties.map((fac) => (
+                  <div
+                    key={fac._id}
+                    className="bg-white p-4 rounded-lg shadow-md border hover:bg-blue-50"
+                  >
+                    <h3 className="font-semibold">{fac.name}</h3>
+                    <p>Email: {fac.email}</p>
+                    <p>Department: {fac.department}</p>
+                    <p>Subjects: {fac.subjects.join(", ")}</p>
+                    <div className="mt-2 space-x-2">
+                      <button
+                        onClick={() => handleUpdateFaculty(fac)}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded"
+                      >
+                        Update
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFaculty(fac._id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedFacultyId(fac._id);
+                          fetchQuizzes(fac._id);
+                        }}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                      >
+                        View Quizzes
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedFacultyId && quizzes.length === 0 && (
+                <div className="mt-6 text-gray-600">
+                  No quizzes created by this faculty yet.
+                </div>
+              )}
+
+              {selectedFacultyId && quizzes.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="font-semibold text-lg mb-2">
+                    Quizzes for {faculties.find((f) => f._id === selectedFacultyId)?.name}
+                  </h3>
+                  {quizzes.map((q) => (
+                    <div
+                      key={q._id}
+                      className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm"
+                    >
+                      <span>
+                        {q.title} ({q.subject})
+                      </span>
+                      <div className="space-x-2">
+                        <button
+                          onClick={() => handleUpdateQuiz(q._id)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
+                        >
+                          Update
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuiz(q._id)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </select>
-              </label>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-            <div className="bg-[#243278] text-white rounded-lg p-6 shadow-md text-center">
-              <h3 className="font-semibold mb-2">Total Quizzes</h3>
-              <p className="text-3xl font-bold">{totalQuizzes}</p>
+          {/* Faculty Section */}
+          {role === "faculty" && quizzes.length === 0 ? (
+            <div className="text-center mt-20">
+              <h2 className="text-2xl font-semibold">No quizzes created yet!</h2>
+              <button
+                onClick={handleCreateQuiz}
+                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium"
+              >
+               Quiz  
+              </button>
             </div>
-            <div
-              onClick={() =>
-                navigate("/faculty-dashboard", { state: { facultyDetails } })
-              }
-              className="bg-[#243278] text-xl font-semibold text-white rounded-lg p-6 shadow-md text-center cursor-pointer hover:bg-[#1e285d] transition"
-            >
-              + Create Quiz
+          ) : role === "faculty" && (
+            <div className="space-y-6">
+              {/* Top Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <motion.div
+                  className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <h3 className="font-semibold mb-2 text-lg">Total Quizzes</h3>
+                  <p className="text-4xl font-bold">{quizzes.length}</p>
+                </motion.div>
+
+                <motion.div
+                  className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center cursor-pointer hover:scale-105"
+                  whileHover={{ scale: 1.05 }}
+                  onClick={handleCreateQuiz}
+                >
+                  <h3 className="font-semibold mb-2 text-lg">Create Quiz</h3>
+                  <p className="text-3xl font-bold">+</p>
+                </motion.div>
+              </div>
+
+              {/* Subject & Quiz selection */}
+              <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                <label className="font-medium">
+                  Select Subject:{" "}
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                    className="ml-2 border border-blue-500 rounded-md px-3 py-2 bg-white text-blue-500 shadow-sm focus:ring focus:ring-blue-500"
+                  >
+                    {facultyDetails.subjects.map((subj, idx) => (
+                      <option key={idx} value={subj}>
+                        {subj}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="font-medium">
+                  Select Quiz:{" "}
+                  <select
+                    value={selectedQuizId}
+                    onChange={(e) => setSelectedQuizId(e.target.value)}
+                    className="ml-2 border border-blue-500 rounded-md px-3 py-2 bg-white text-blue-500 shadow-sm focus:ring focus:ring-blue-500"
+                  >
+                    {subjectQuizzes.map((quiz) => (
+                      <option key={quiz._id} value={quiz._id}>
+                        {quiz.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {/* Stats Cards */}
+              {selectedQuiz && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                  <motion.div
+                    className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <h3 className="font-semibold mb-2 text-lg">Completed</h3>
+                    <p className="text-4xl font-bold">
+                      <AnimatedNumber value={completedStudents} />
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                  >
+                    <h3 className="font-semibold mb-2 text-lg">Remaining</h3>
+                    <p className="text-4xl font-bold">
+                      <AnimatedNumber value={remainingStudents} />
+                    </p>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Charts */}
+              {selectedQuiz && (
+                <div className="mt-6 flex flex-col items-center space-y-6">
+                  <Plot
+                    data={[
+                      {
+                        values: [completedStudents, remainingStudents],
+                        labels: ["Completed", "Remaining"],
+                        type: "pie",
+                        marker: { colors: ["#00bfff", "#87cefa"] },
+                        textinfo: "label+percent",
+                        textposition: "inside",
+                        hole: 0.4,
+                      },
+                    ]}
+                    layout={{
+                      title: selectedQuiz?.title + " - Completion Status",
+                      paper_bgcolor: "white",
+                      plot_bgcolor: "white",
+                      font: { color: "#1e3a8a" },
+                      height: 400,
+                      width: 400,
+                    }}
+                    config={{ displayModeBar: false }}
+                  />
+
+                  <Plot
+                    data={[
+                      {
+                        x: quizzes.map((q) => `${q.subject} - ${q.title}`),
+                        y: quizzes.map((q) => q.completed?.length || 0),
+                        name: "Completed",
+                        type: "bar",
+                        marker: { color: "#00bfff" },
+                      },
+                      {
+                        x: quizzes.map((q) => `${q.subject} - ${q.title}`),
+                        y: quizzes.map((q) => (q.limit || 70) - (q.completed?.length || 0)),
+                        name: "Remaining",
+                        type: "bar",
+                        marker: { color: "#87cefa" },
+                      },
+                    ]}
+                    layout={{
+                      title: "All Quizzes Completion Status",
+                      barmode: "stack",
+                      height: 450,
+                      width: 900,
+                      paper_bgcolor: "white",
+                      plot_bgcolor: "white",
+                      font: { color: "#1e3a8a" },
+                      yaxis: { title: "Students", range: [0, Math.max(...quizzes.map((q) => q.limit || 70))] },
+                      xaxis: { tickangle: -45, automargin: true },
+                    }}
+                    config={{ displayModeBar: false }}
+                  />
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Stats */}
-            <div className="grid grid-cols-1 gap-6 mt-8">
-      {/* Single Box */}
-      <div className="bg-[#243278] text-white rounded-lg p-6 shadow-md text-center">
-        <h3 className="font-semibold mb-2">Enrolled Students</h3>
-        <p className="text-2xl font-bold">
-          {DEFAULT_TOTAL_STUDENTS_PER_QUIZ}
-        </p>
-        <button
-          onClick={() => setShowGraph(!showGraph)}
-          className="mt-4 px-4 py-2 bg-white text-[#243278] font-semibold rounded-lg shadow hover:bg-gray-100 transition"
-        >
-          {showGraph ? "Hide Progress" : "Show Progress"}
-        </button>
-      </div>
-
-      {/* Bar Graph (only visible when button clicked) */}
-      {showGraph && (
-        <div className="mt-10 flex justify-center">
-          <Plot
-            data={[
-              {
-                x: ["Completed", "Remaining"],
-                y: [completedStudents, remainingStudents],
-                type: "bar",
-                marker: { color: ["#243278", "#f44336"] },
-                width: 0.4,
-              },
-            ]}
-            layout={{
-              title: "Quiz Completion Status",
-              height: 400,
-              width: 400,
-              margin: { t: 40, b: 40, l: 40, r: 20 },
-              font: { family: "'Poppins', sans-serif" },
-            }}
-            config={{ displayModeBar: false }}
-          />
-        </div>
-      )}
-    </div>
+          )}
         </main>
       </div>
     </div>

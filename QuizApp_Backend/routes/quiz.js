@@ -15,6 +15,7 @@ import { createQuizWithImageQuestion } from '../controllers/quizController.js';
 import protect2  from '../middlewares/user_middleware.js';
 import { isAuthenticated } from '../middlewares/authMiddleware2.js';
 const router = express.Router();
+import { getAllFaculties } from '../controllers/facultyController.js';
 import upload from '../middlewares/upload.js';
 router.post("/:quizId/addqs",upload.single("image"), addImageQuestion);
 import { addImageQuestion } from '../controllers/quizController.js';
@@ -24,6 +25,7 @@ router.post("/:quizId/save-progress", isAuthenticated, saveProgress);
 router.get('/quizzes/:quizId/student/:studentId/category-distribution', getCategoryDistribution);
 // Route to create a quiz
 router.post('/create', createQuiz);
+router.get("/getall", getAllFaculties);
 router.post("/imagebaseqs",  upload.single("image"),createQuizWithImageQuestion)
 // Get a specific quiz by ID
 router.get('/:quizId',isAuthenticated, getQuiz);

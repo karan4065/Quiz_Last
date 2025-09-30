@@ -1,4 +1,3 @@
-// Login.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -7,45 +6,30 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    // Attempt faculty login first
-    let response = await fetch("http://localhost:5000/api/faculty/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email: username, password : password }),
-      credentials: "include",
-    });
+    try {
+      const response = await fetch("http://localhost:5000/api/faculty/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: username, password }),
+        credentials: "include",
+      });
 
-    let result = await response.json();
-
-    if (response.ok && result.success) {
-      if (result.data.isAdmin) {
-        // Admin login
-        navigate("/admin-dashboard", {
-          state: { facultyDetails: result.data },
-        });
+      const result = await response.json();
+console.log(result.data);
+      if (response.ok && result.success) {
+        // Navigate to Dashboard for both roles
+        navigate("/dashboard", { state: { facultyDetails: result.data } });
       } else {
-        // Regular faculty login
-        navigate("/dashboard", {
-          state: { facultyDetails: result.data },
-        });
+        alert("Invalid Username or Password");
       }
-    } else {
-      alert("Invalid Username or Password");
+    } catch (error) {
+      console.error("An error occurred:", error);
+      alert(`An error occurred: ${error.message || "Please try again later."}`);
     }
-  } catch (error) {
-    console.error("An error occurred:", error);
-    alert(
-      `An error occurred: ${error.message || "Please try again later."}`
-    );
-  }
-};
-
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-[#4a0e23] via-[#6d1b3b] to-[#8e244d]">
@@ -69,10 +53,7 @@ const handleSubmit = async (e) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Username */}
             <div>
-              <label
-                className="block text-sm font-semibold text-gray-700 mb-1"
-                htmlFor="username"
-              >
+              <label className="block text-sm font-semibold text-gray-700 mb-1" htmlFor="username">
                 Username
               </label>
               <input
@@ -88,10 +69,7 @@ const handleSubmit = async (e) => {
 
             {/* Password */}
             <div>
-              <label
-                className="block text-sm font-semibold text-gray-700 mb-1"
-                htmlFor="password"
-              >
+              <label className="block text-sm font-semibold text-gray-700 mb-1" htmlFor="password">
                 Password
               </label>
               <input
@@ -118,8 +96,7 @@ const handleSubmit = async (e) => {
 
       {/* Footer */}
       <footer className="text-center text-gray-200 py-4 text-sm bg-[#4a0e23]/90">
-        © 2025 St. Vincent Pallotti College of Engineering & Technology | All
-        Rights Reserved
+        © 2025 St. Vincent Pallotti College of Engineering & Technology | All Rights Reserved
       </footer>
     </div>
   );
