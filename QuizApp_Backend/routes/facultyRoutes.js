@@ -1,5 +1,7 @@
 // routes/facultyRoutes.js
 import express from 'express';
+import upload from '../middlewares/upload.js';
+import multer from 'multer';
 import { loginFaculty, registerFaculty, uploadFacultyCSV, getFacultyQuizzes} from '../controllers/facultyController.js';
 const router = express.Router();
 import { deleteFaculty,updateFaculty } from '../controllers/facultyController.js';

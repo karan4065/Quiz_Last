@@ -7,6 +7,9 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import mongoose from 'mongoose'
+import bcrypt from 'bcryptjs'
+import Faculty from './models/Faculty.js';
 import { deleteInactiveProgress } from './controllers/quizController.js';
 dotenv.config();
 console.log("JWT_SECRET from env:", process.env.JWT_SECRET);
@@ -44,6 +47,16 @@ app.get('/health', (req, res) => {
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/quizzes', quizRoutes);
+
+const facultyData = {
+  name: "Divyansh",
+  email: "divyansh6669@college.com",
+  department: "CIVIL",
+  phone: "9876514816",
+  password: "9876514816",
+  isAdmin: false,
+  subjects: "Math;Physics"
+};
 
 
 const PORT = process.env.PORT || 5000;

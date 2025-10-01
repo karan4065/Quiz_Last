@@ -3,12 +3,14 @@ import Faculty from '../models/Faculty.js';
 import Quiz from '../models/Quiz.js';
 import Papa from "papaparse";
 import bcrypt from "bcryptjs";
-
+import connectDB from '../config/db.js';
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, 'divyansh', {
       expiresIn: '30d', // Token expiry (30 days)
   });
 };
+
+connectDB();
 
 // GET /api/faculty/:facultyId/quizzes?subject=Computer%20Science
 export const getFacultyQuizzes = async (req, res) => {
@@ -63,18 +65,12 @@ export const registerFaculty = async (req, res) => {
   }
 };
 
-
-
-
-
 export const loginFaculty = async (req, res) => {
     const { email, password } = req.body;
-    console.log(req.body);
-
     try {
-        // Find faculty by email
+     
         const user = await Faculty.findOne({ email });
-        console.log("urse",user);
+       
 
         if (!user) {
             return res.status(401).json({
@@ -134,6 +130,7 @@ export const getAllFaculties = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
+import fs from 'fs'
 export const uploadFacultyCSV = async (req, res) => {
   try {
     console.log("🚀 Received request body:", req.body);
@@ -187,8 +184,7 @@ export const uploadFacultyCSV = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Server error", error: err.message });
-  }
-};
+  }};
 export const updateFaculty = async (req, res) => {
   try {
     const { id } = req.params;

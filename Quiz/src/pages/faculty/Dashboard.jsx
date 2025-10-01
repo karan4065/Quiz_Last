@@ -13,7 +13,8 @@ const AnimatedNumber = ({ value }) => {
     let start = 0;
     const end = value;
     const duration = 800;
-    const increment = Math.ceil(end / (duration / 16));
+    const stepTime = 16;
+    const increment = Math.ceil(end / (duration / stepTime));
 
     const counter = setInterval(() => {
       start += increment;
@@ -22,7 +23,7 @@ const AnimatedNumber = ({ value }) => {
         clearInterval(counter);
       }
       setCount(start);
-    }, 16);
+    }, stepTime);
 
     return () => clearInterval(counter);
   }, [value]);
@@ -33,21 +34,34 @@ const AnimatedNumber = ({ value }) => {
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const facultyDetails = location.state?.facultyDetails;
+
+  const [facultyDetails, setFacultyDetails] = useState(
+    location.state?.facultyDetails || (() => {
+      const stored = localStorage.getItem("facultyDetails");
+      return stored ? JSON.parse(stored) : null;
+    })()
+  );
+
+  useEffect(() => {
+    if (!facultyDetails) {
+      navigate("/");
+    }
+  }, [facultyDetails, navigate]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole] = useState(facultyDetails?.isAdmin ? "admin" : "faculty");
 
-  // Faculty and quizzes
   const [quizzes, setQuizzes] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState("Computer Science");
+  const [selectedSubject, setSelectedSubject] = useState(
+    facultyDetails?.subjects?.[0] || ""
+  );
   const [subjectQuizzes, setSubjectQuizzes] = useState([]);
   const [selectedQuizId, setSelectedQuizId] = useState("");
   const [selectedQuiz, setSelectedQuiz] = useState(null);
 
-  // Admin-specific
   const [faculties, setFaculties] = useState([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState(null);
+
   const [csvFile, setCsvFile] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -55,7 +69,6 @@ const Dashboard = () => {
 
   const sidebarRef = useRef();
 
-  // Fetch quizzes
   const fetchQuizzes = async (facultyId = null) => {
     if (!facultyDetails?._id && role === "faculty") return;
     setLoading(true);
@@ -66,56 +79,72 @@ const Dashboard = () => {
         url = `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`;
       } else if (role === "admin" && facultyId) {
         url = `http://localhost:5000/api/faculty/${facultyId}/quizzes`;
+      } else {
+        setQuizzes([]);
+        setSelectedQuizId("");
+        setLoading(false);
+        return;
       }
+
       const response = await axios.get(url);
       const data = response.data.data || [];
       setQuizzes(data);
-      setSelectedQuizId(data[0]?._id || "");
+
+      if (data.length > 0) {
+        setSelectedQuizId(data[0]._id);
+      } else {
+        setSelectedQuizId("");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("fetchQuizzes error:", err);
       setError("Failed to fetch quizzes");
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch all faculties for admin
   const fetchAllFaculties = async () => {
     try {
       setLoading(true);
       const response = await axios.get("http://localhost:5000/api/faculty/getall");
       setFaculties(response.data.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("fetchAllFaculties error:", err);
       setError("Failed to fetch faculties");
     } finally {
       setLoading(false);
     }
   };
 
-  // Admin functions
   const handleDeleteFaculty = async (id) => {
     if (!window.confirm("Delete this faculty?")) return;
     try {
       await axios.delete(`http://localhost:5000/api/faculty/delete/${id}`);
       alert("Faculty deleted successfully");
       fetchAllFaculties();
+      if (selectedFacultyId === id) {
+        setSelectedFacultyId(null);
+        setQuizzes([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("handleDeleteFaculty error:", err);
       alert("Failed to delete faculty");
     }
   };
 
   const handleUpdateFaculty = (faculty) => {
-    const name = prompt("Update name:", faculty.name) || faculty.name;
-    const email = prompt("Update email:", faculty.email) || faculty.email;
+    const name = prompt("Update name:", faculty.name) ?? faculty.name;
+    const email = prompt("Update email:", faculty.email) ?? faculty.email;
     axios
       .put(`http://localhost:5000/api/faculty/update/${faculty._id}`, { name, email })
       .then(() => {
         alert("Faculty updated!");
         fetchAllFaculties();
       })
-      .catch(() => alert("Failed to update"));
+      .catch((err) => {
+        console.error("handleUpdateFaculty error:", err);
+        alert("Failed to update faculty");
+      });
   };
 
   const handleUploadCSV = async () => {
@@ -134,24 +163,42 @@ const Dashboard = () => {
     }
   };
 
+
+
   useEffect(() => {
-    if (role === "faculty") fetchQuizzes();
-    if (role === "admin") fetchAllFaculties();
+    if (role === "faculty") {
+      fetchQuizzes();
+    } else if (role === "admin") {
+      fetchAllFaculties();
+    }
   }, [facultyDetails, role]);
 
   useEffect(() => {
-    if (!selectedSubject) return;
+    if (!selectedSubject) {
+      setSubjectQuizzes([]);
+      setSelectedQuizId("");
+      return;
+    }
     const filtered = quizzes.filter((q) => q.subject === selectedSubject);
     setSubjectQuizzes(filtered);
-    if (filtered.length > 0 && !selectedQuizId) {
-      setSelectedQuizId(filtered[0]._id);
+
+    if (filtered.length > 0) {
+      const exists = filtered.find((q) => q._id === selectedQuizId);
+      if (!exists) {
+        setSelectedQuizId(filtered[0]._id);
+      }
+    } else {
+      setSelectedQuizId("");
     }
-  }, [selectedSubject, quizzes, selectedQuizId]);
+  }, [selectedSubject, quizzes]);
 
   useEffect(() => {
-    if (!selectedQuizId) return;
-    const quiz = quizzes.find((q) => q._id === selectedQuizId);
-    setSelectedQuiz(quiz || null);
+    if (!selectedQuizId) {
+      setSelectedQuiz(null);
+      return;
+    }
+    const q = quizzes.find((q) => q._id === selectedQuizId);
+    setSelectedQuiz(q || null);
   }, [selectedQuizId, quizzes]);
 
   useEffect(() => {
@@ -161,12 +208,19 @@ const Dashboard = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
-  const handleLogout = () => navigate("/");
-  const handleCreateQuiz = () =>
+  const handleLogout = () => {
+    localStorage.removeItem("facultyDetails");
+    navigate("/");
+  };
+
+  const handleCreateQuiz = () => {
     navigate("/faculty-dashboard", { state: { facultyDetails } });
+  };
 
   const handleDeleteQuiz = async (quizId) => {
     if (!window.confirm("Are you sure you want to delete this quiz?")) return;
@@ -175,7 +229,7 @@ const Dashboard = () => {
       alert("Quiz deleted successfully!");
       fetchQuizzes(selectedFacultyId || undefined);
     } catch (err) {
-      console.error(err);
+      console.error("handleDeleteQuiz error:", err);
       alert("Failed to delete quiz");
     }
   };
@@ -186,10 +240,32 @@ const Dashboard = () => {
     });
   };
 
-  if (!facultyDetails)
-    return <div className="p-6 font-sans text-gray-800">No faculty details found.</div>;
-  if (loading) return <div className="p-6 font-sans text-gray-800">Loading...</div>;
-  if (error) return <div className="p-6 font-sans text-red-600">Error: {error}</div>;
+  if (!facultyDetails) {
+    return (
+      <div className="p-6 font-sans text-gray-800">
+        No faculty details found.
+      </div>
+    );
+  }
+  if (loading) {
+    return <div className="p-6 font-sans text-gray-800">Loading...</div>;
+  }
+  if (error) {
+    return <div className="p-6 font-sans text-red-600">Error: {error}</div>;
+  }
+
+  // Compute counts for completed-quiz / in-progress
+  const completedQuizCount = quizzes.filter((q) => {
+    const comp = q.completed?.length || 0;
+    const lim = q.limit || 0;
+    return lim > 0 && comp >= lim;
+  }).length;
+  const inProgressQuizCount = quizzes.filter((q) => {
+    const comp = q.completed?.length || 0;
+    const lim = q.limit || 0;
+    // either some completed but not full, or zero but limit > 0
+    return lim > 0 && comp < lim;
+  }).length;
 
   const completedStudents = selectedQuiz?.completed?.length || 0;
   const remainingStudents = (selectedQuiz?.limit || 70) - completedStudents;
@@ -224,6 +300,8 @@ const Dashboard = () => {
                     onChange={(e) => {
                       setRole(e.target.value);
                       setSelectedFacultyId(null);
+                      setQuizzes([]);
+                      setSelectedQuizId("");
                     }}
                     className="ml-2 border border-blue-500 rounded-md px-2 py-1 bg-white text-blue-500"
                   >
@@ -251,7 +329,7 @@ const Dashboard = () => {
       <div className="flex-grow">
         <Navbar
           userName={`Hey, ${facultyDetails.name}`}
-          onProfileClick={() => setSidebarOpen(!sidebarOpen)}
+          onProfileClick={() => setSidebarOpen((prev) => !prev)}
         />
 
         <main className="p-8">
@@ -265,7 +343,7 @@ const Dashboard = () => {
                 <input
                   type="file"
                   accept=".csv"
-                  onChange={(e) => setCsvFile(e.target.files[0])}
+                  onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
                   className="mr-2"
                 />
                 <button
@@ -323,7 +401,8 @@ const Dashboard = () => {
               {selectedFacultyId && quizzes.length > 0 && (
                 <div className="mt-6 space-y-3">
                   <h3 className="font-semibold text-lg mb-2">
-                    Quizzes for {faculties.find((f) => f._id === selectedFacultyId)?.name}
+                    Quizzes for{" "}
+                    {faculties.find((f) => f._id === selectedFacultyId)?.name}
                   </h3>
                   {quizzes.map((q) => (
                     <div
@@ -362,12 +441,39 @@ const Dashboard = () => {
                 onClick={handleCreateQuiz}
                 className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium"
               >
-               Quiz  
+                Create Quiz
               </button>
             </div>
           ) : role === "faculty" && (
             <div className="space-y-6">
-              {/* Top Cards */}
+              {/* First Row: Completed / In‑Progress Quizzes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <motion.div
+                  className="bg-white text-green-600 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <h3 className="font-semibold mb-2 text-lg">Completed Quizzes</h3>
+                  <p className="text-4xl font-bold">
+                    <AnimatedNumber value={completedQuizCount} />
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  className="bg-white text-yellow-600 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <h3 className="font-semibold mb-2 text-lg">In Progress Quizzes</h3>
+                  <p className="text-4xl font-bold">
+                    <AnimatedNumber value={inProgressQuizCount} />
+                  </p>
+                </motion.div>
+              </div>
+
+              {/* Second Row: Total Quizzes & Create Quiz */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <motion.div
                   className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
@@ -502,7 +608,10 @@ const Dashboard = () => {
                       paper_bgcolor: "white",
                       plot_bgcolor: "white",
                       font: { color: "#1e3a8a" },
-                      yaxis: { title: "Students", range: [0, Math.max(...quizzes.map((q) => q.limit || 70))] },
+                      yaxis: {
+                        title: "Students",
+                        range: [0, Math.max(...quizzes.map((q) => q.limit || 70))],
+                      },
                       xaxis: { tickangle: -45, automargin: true },
                     }}
                     config={{ displayModeBar: false }}

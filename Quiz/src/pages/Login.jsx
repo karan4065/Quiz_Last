@@ -19,10 +19,15 @@ const Login = () => {
 
       const result = await response.json();
 console.log(result.data);
-      if (response.ok && result.success) {
-        // Navigate to Dashboard for both roles
-        navigate("/dashboard", { state: { facultyDetails: result.data } });
-      } else {
+     if (response.ok && result.success) {
+  const facultyDetails = result.data;
+
+  // Save globally
+  localStorage.setItem("facultyDetails", JSON.stringify(facultyDetails));
+
+  navigate("/dashboard");
+}
+      else {
         alert("Invalid Username or Password");
       }
     } catch (error) {

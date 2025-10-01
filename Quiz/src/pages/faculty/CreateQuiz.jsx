@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const CreateQuiz = ({ facultyDetails }) => {
+const CreateQuiz = () => {
+  const location = useLocation();
+const navigate = useNavigate();
+const facultyDetails =
+  location.state?.facultyDetails ||
+  JSON.parse(localStorage.getItem("facultyDetails"));
+
+if (!facultyDetails) {
+  navigate("/"); // force back to login if no details
+}
+
   const [quizFile, setQuizFile] = useState(null);
   const [quizTitle, setQuizTitle] = useState("");
   const [quizDuration, setQuizDuration] = useState(30);
