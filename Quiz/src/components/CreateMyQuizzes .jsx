@@ -7,23 +7,24 @@ const CreateMyQuizzes = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ✅ Get facultyDetails from location OR localStorage
   const facultyDetails =
     location.state?.facultyDetails ||
     JSON.parse(localStorage.getItem("facultyDetails"));
 
   const [quizzes, setQuizzes] = useState([]);
+  const [filteredQuizzes, setFilteredQuizzes] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSession, setSelectedSession] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
-  // ✅ Redirect to login if no faculty details found
   useEffect(() => {
     if (!facultyDetails) {
       navigate("/");
     }
   }, [facultyDetails, navigate]);
 
-  // ✅ Fetch quizzes only if facultyId is available
   useEffect(() => {
     if (facultyDetails?._id) {
       fetchQuizzes(facultyDetails._id);
@@ -32,19 +33,34 @@ const CreateMyQuizzes = () => {
 
   const fetchQuizzes = async (facultyId) => {
     setLoading(true);
+    setError("");
     try {
-        ///:facultyId/quizzes
       const res = await axios.get(
         `http://localhost:5000/api/faculty/${facultyId}/quizzes`
       );
-      if (res.data.success) {
-        setQuizzes(res.data.data);
+      const data = res.data;
+      if (data.success && Array.isArray(data.data)) {
+        setQuizzes(data.data);
+        setFilteredQuizzes(data.data);
+
+        const uniqueSessions = [
+          ...new Set(
+            data.data
+              .map((q) => q.session)
+              .filter((s) => s !== undefined && s !== null && s !== "")
+          ),
+        ];
+        setSessions(uniqueSessions);
       } else {
         setQuizzes([]);
+        setFilteredQuizzes([]);
+        setError("No quizzes found");
       }
     } catch (err) {
-      console.error("Error fetching quizzes:", err);
+      console.error("fetchQuizzes error:", err);
       setError("Failed to load quizzes");
+      setQuizzes([]);
+      setFilteredQuizzes([]);
     } finally {
       setLoading(false);
     }
@@ -57,81 +73,166 @@ const CreateMyQuizzes = () => {
       const res = await axios.delete(
         `http://localhost:5000/api/quiz/delete/${quizId}`
       );
-      if (res.data.success) {
-        setQuizzes((prev) => prev.filter((quiz) => quiz._id !== quizId));
+      const data = res.data;
+      if (data.success) {
+        const updated = quizzes.filter((q) => q._id !== quizId);
+        setQuizzes(updated);
+        applyFilters(updated, searchTerm, selectedSession);
         alert("Quiz deleted successfully!");
       } else {
         alert("Failed to delete quiz.");
       }
     } catch (err) {
-      console.error("Error deleting quiz:", err);
+      console.error("delete error:", err);
       alert("Error deleting quiz.");
     }
   };
 
+  const applyFilters = (quizList, search, session) => {
+    let filtered = quizList;
+
+    if (session && session !== "all") {
+      filtered = filtered.filter((q) => q.session === session);
+    }
+    if (search && search.trim() !== "") {
+      filtered = filtered.filter((q) =>
+        q.title.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    setFilteredQuizzes(filtered);
+  };
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchTerm(val);
+    applyFilters(quizzes, val, selectedSession);
+  };
+
+  const handleSessionChange = (e) => {
+    const val = e.target.value;
+    setSelectedSession(val);
+    applyFilters(quizzes, searchTerm, val);
+  };
+
   return (
-    <div className="flex bg-[#f5f6fa] min-h-screen font-sans text-gray-800">
-      {/* Main Content */}
+    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen">
       <div className="flex-grow">
         <Navbar
           userName={`Hey, ${facultyDetails?.name || "Faculty"}`}
           onProfileClick={() => navigate(-1)}
         />
-
-        <main className="p-8">
-          <h2 className="text-2xl font-semibold mt-4 text-[#1e254a]">
+        <main className="p-6">
+          <h2 className="text-3xl font-semibold mb-4 text-gray-800">
             My Created Quizzes
           </h2>
 
-          {loading && (
-            <p className="mt-6 text-blue-600 font-medium">Loading quizzes...</p>
-          )}
-          {error && (
-            <p className="mt-6 text-red-600 font-medium">{error}</p>
-          )}
-
-          {quizzes.length > 0 ? (
-            <div className="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quizzes.map((quiz) => (
-                <div
-                  key={quiz._id}
-                  className="p-6 bg-white shadow-lg rounded-md border hover:shadow-xl transition"
-                >
-                  <h3 className="text-lg font-bold text-[#243278]">
-                    {quiz.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Created: {new Date(quiz.createdAt).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Questions: {quiz.questions?.length || 0}
-                  </p>
-
-                  <div className="mt-4 flex space-x-2">
-                    <button
-                      onClick={() =>
-                        navigate("/quiz-details", { state: { quiz } })
-                      }
-                      className="flex-1 bg-[#243278] text-white py-2 rounded-md hover:bg-[#1b265f] transition"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleDeleteQuiz(quiz._id)}
-                      className="flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+          {/* Search & Filter */}
+          <div className="mb-6 bg-white p-4 rounded-lg shadow flex flex-col md:flex-row gap-4">
+            <input
+              type="text"
+              placeholder="Search by quiz title..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
+            />
+            <select
+              value={selectedSession}
+              onChange={handleSessionChange}
+              className="w-full md:w-1/4 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
+            >
+              <option value="all">All Sessions</option>
+              {sessions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
+            </select>
+          </div>
+
+          {/* Loading / Error */}
+          {loading && (
+            <p className="text-center text-indigo-600 font-medium">
+              Loading quizzes...
+            </p>
+          )}
+          {error && !loading && (
+            <p className="text-center text-red-600 font-medium">{error}</p>
+          )}
+
+          {/* Quiz Table */}
+          {!loading && filteredQuizzes.length > 0 && (
+            <div className="overflow-x-auto bg-white shadow rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-indigo-600 text-white">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">
+                      Quiz ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">
+                      Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">
+                      Session
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">
+                      Questions
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">
+                      Created At
+                    </th>
+                    <th className="px-6 py-3 text-center text-sm font-semibold">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredQuizzes.map((quiz) => (
+                    <tr
+                      key={quiz._id}
+                      className="hover:bg-gray-50 transition"
+                    >
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {quiz._id}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-800">
+                        {quiz.title}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {quiz.session || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {Array.isArray(quiz.questions)
+                          ? quiz.questions.length
+                          : 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(quiz.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 flex justify-center space-x-2">
+                        <button
+                          onClick={() => navigate(`/quiz-results/${quiz._id}`)}
+                          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md transition"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuiz(quiz._id)}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-md transition"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            !loading && (
-              <p className="mt-6 text-gray-600">
-                You haven’t created any quizzes yet.
-              </p>
-            )
+          )}
+
+          {!loading && filteredQuizzes.length === 0 && !error && (
+            <p className="text-center text-gray-600 mt-8">
+              You haven’t created any quizzes yet.
+            </p>
           )}
         </main>
       </div>

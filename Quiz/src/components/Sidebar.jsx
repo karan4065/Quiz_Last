@@ -1,118 +1,157 @@
-import React, { useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  FiMenu, FiX, FiHome, FiPlusCircle,
+  FiBookOpen, FiUsers, FiLogOut
+} from "react-icons/fi";
 
 const Sidebar = ({
   isLoggedIn,
   onLogout,
   facultyDetails,
   role,
-  onRoleChange,
+  onRoleChange
 }) => {
   const navigate = useNavigate();
-  const sidebarRef = useRef(null);
+  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const closeSidebar = () => setIsOpen(false);
 
   const handleLogout = () => {
     onLogout?.();
     navigate("/");
+    closeSidebar();
   };
 
+  const handleRoleChange = (newRole) => {
+    onRoleChange(newRole);
+    if (newRole === "admin") navigate("/admin-dashboard");
+    else if (newRole === "faculty") navigate("/dashboard");
+    closeSidebar();
+  };
+
+  const handleNavClick = (to) => {
+    navigate(to);
+    closeSidebar();
+  };
+
+  const navItems = [
+    {
+      name: "Dashboard",
+      to: role === "admin" ? "/admin-dashboard" : "/dashboard",
+      icon: <FiHome />
+    },
+    { name: "Create Quiz", to: "/createquiz", icon: <FiPlusCircle /> },
+    { name: "My Quiz", to: "/myquiz", icon: <FiBookOpen /> },
+    { name: "Student Details", to: "/studentdetails", icon: <FiUsers /> },
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <aside
-      ref={sidebarRef}
-      className="h-screen w-64 bg-white p-6 fixed z-20 flex flex-col justify-between shadow-xl rounded-tr-xl rounded-br-xl border-l-2 border-blue-500"
-    >
-      <div>
-        <h2 className="text-xl font-bold mb-6 border-b border-blue-500 pb-2">
-          Faculty Profile
-        </h2>
-        <div className="space-y-3 text-sm bg-gray-100 p-4 rounded-md shadow-inner">
+    <>
+      {/* Mobile Toggle Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed top-4 left-4 z-40 p-2 bg-blue-600 text-white rounded-md shadow-md lg:hidden transition hover:scale-105"
+      >
+        {isOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+      </button>
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden"
+          onClick={closeSidebar}
+        ></div>
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-screen w-64 
+        bg-white shadow-xl border-r border-gray-200 p-6 z-40 
+        flex flex-col justify-between transform transition-transform duration-300 ease-in-out
+        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+        lg:translate-x-0 lg:static`}
+      >
+        <div>
+          <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-200 text-gray-800">
+            {role === "admin" ? "Admin Panel" : "Faculty Panel"}
+          </h2>
+
+          {/* Faculty Info */}
+          <div className="space-y-3 text-sm bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm">
+            <div>
+              <span className="font-semibold text-gray-700">Name:</span>{" "}
+              {facultyDetails?.name || "N/A"}
+            </div>
           <div>
-            <span className="font-semibold">Name:</span> {facultyDetails.name}
-          </div>
-          <div>
-            <span className="font-semibold">Email:</span> {facultyDetails.email}
-          </div>
-          <div>
-            <span className="font-semibold">Department:</span>{" "}
-            {facultyDetails.department}
+  <span className="font-semibold text-gray-700">Email:</span>{" "}
+  <span
+    className="inline-block max-w-[180px] break-words"
+    title={facultyDetails?.email || "N/A"}
+  >
+    {facultyDetails?.email || "N/A"}
+  </span>
+</div>
+            <div>
+              <span className="font-semibold text-gray-700">Department:</span>{" "}
+              {facultyDetails?.department || "N/A"}
+            </div>
+
+            {/* Role Selection */}
+            {facultyDetails?.isAdmin ? (
+              <div>
+                <span className="font-semibold text-gray-700">Role:</span>{" "}
+                <select
+                  value={role}
+                  onChange={(e) => handleRoleChange(e.target.value)}
+                  className="ml-2 border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="faculty">Faculty</option>
+                </select>
+              </div>
+            ) : (
+              <div>
+                <span className="font-semibold text-gray-700">Role:</span> Faculty
+              </div>
+            )}
           </div>
 
-          {facultyDetails.isAdmin ? (
-            <div>
-              <span className="font-semibold">Role:</span>{" "}
-              <select
-                value={role}
-                onChange={(e) => onRoleChange(e.target.value)}
-                className="ml-2 border border-blue-500 rounded-md px-2 py-1 bg-white text-blue-500"
+          {/* Navigation */}
+          <nav className="mt-8 flex flex-col gap-2 text-gray-700 font-medium">
+            {navItems.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => handleNavClick(item.to)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all
+                ${isActive(item.to)
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    : "hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 hover:text-white hover:shadow-md"
+                  }`}
               >
-                <option value="admin">Admin</option>
-                <option value="faculty">Faculty</option>
-              </select>
-            </div>
-          ) : (
-            <div>
-              <span className="font-semibold">Role:</span> Faculty
-            </div>
-          )}
+                <span className="text-lg">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Navigation links */}
-        <nav className="mt-8 flex flex-col gap-4 text-blue-700 font-semibold">
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              isActive
-                ? "bg-blue-100 rounded px-3 py-2"
-                : "hover:bg-blue-50 rounded px-3 py-2"
-            }
+        {isLoggedIn && (
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-2 
+            bg-gradient-to-r from-red-500 to-pink-500 text-white 
+            hover:from-pink-500 hover:to-red-500 
+            py-2 rounded-md transition transform hover:scale-105 font-semibold shadow-md"
           >
-            Dashboard
-          </NavLink>
-
-          <NavLink
-            to="/createquiz"
-            className={({ isActive }) =>
-              isActive
-                ? "bg-blue-100 rounded px-3 py-2"
-                : "hover:bg-blue-50 rounded px-3 py-2"
-            }
-          >
-            Create Quiz
-          </NavLink>
-
-          <NavLink
-            to="/myquiz"
-            className={({ isActive }) =>
-              isActive
-                ? "bg-blue-100 rounded px-3 py-2"
-                : "hover:bg-blue-50 rounded px-3 py-2"
-            }
-          >
-            My Quiz
-          </NavLink>
-
-          <NavLink
-            to="/studentdetails"
-            className={({ isActive }) =>
-              isActive
-                ? "bg-blue-100 rounded px-3 py-2"
-                : "hover:bg-blue-50 rounded px-3 py-2"
-            }
-          >
-            Student Detail
-          </NavLink>
-        </nav>
-      </div>
-
-      {isLoggedIn && (
-        <button
-          onClick={handleLogout}
-          className="bg-blue-500 hover:brightness-110 w-full py-2 rounded-md transition font-medium shadow-md mt-6 text-white"
-        >
-          Logout
-        </button>
-      )}
-    </aside>
+            <FiLogOut className="text-lg" /> Logout
+          </button>
+        )}
+      </aside>
+    </>
   );
 };
 

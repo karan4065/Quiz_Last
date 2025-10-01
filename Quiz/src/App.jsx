@@ -5,7 +5,7 @@ import Quiz from "./pages/student/Quiz";
 import ThankYou from "./pages/student/ThankYou";
 import FacultyDashboard from "./pages/faculty/FacultyDashboard";
 import StudentResult from "./pages/faculty/StudentResult";
-import StudentDetails from "./pages/student/StudentDetails";
+import StudentDetails from "./components/StudentDetail";
 import StudentLogin from "./pages/StudentLogin";
 import Home from "./pages/Home";
 import QuizResults from "./pages/faculty/QuizResults";
@@ -98,7 +98,7 @@ const App = () => {
               role={role}
               onRoleChange={handleRoleChange}
             >
-              <Dashboard />
+                  <Dashboard role={role} facultyDetails={facultyDetails} />
             </DashboardLayout>
           }
         />

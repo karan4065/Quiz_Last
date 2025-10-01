@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 
 const QuizResults = () => {
   const { quizId } = useParams();
+  console.log(quizId)
   const location = useLocation();
   const [quizTitle, setQuizTitle] = useState(location.state?.quizTitle || "");
   const [submissions, setSubmissions] = useState([]);

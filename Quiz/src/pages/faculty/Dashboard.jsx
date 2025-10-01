@@ -1,18 +1,23 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
 import Plot from "react-plotly.js";
 import { motion } from "framer-motion";
+import {
+  CircularProgressbarWithChildren,
+  buildStyles
+} from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
 
-// Animated number component
+// Animated number component for smooth counting
 const AnimatedNumber = ({ value }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     let start = 0;
     const end = value;
-    const duration = 800;
+    const duration = 1200;
     const stepTime = 16;
     const increment = Math.ceil(end / (duration / stepTime));
 
@@ -31,15 +36,67 @@ const AnimatedNumber = ({ value }) => {
   return <span>{count}</span>;
 };
 
-const Dashboard = () => {
+// Smooth animated progress circle with gradient
+const AnimatedProgressCircle = ({ value, colors, displayValue }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const duration = 1200;
+    const stepTime = 16;
+    const increment = (value * stepTime) / duration;
+
+    const interval = setInterval(() => {
+      start += increment;
+      if (start >= value) {
+        start = value;
+        clearInterval(interval);
+      }
+      setProgress(start);
+    }, stepTime);
+
+    return () => clearInterval(interval);
+  }, [value]);
+
+  return (
+    <CircularProgressbarWithChildren
+      value={progress}
+      styles={buildStyles({
+        pathColor: `url(#gradient)`,
+        trailColor: "#f0fdf4",
+        textColor: "#111827",
+        textSize: "18px",
+      })}
+    >
+      <svg style={{ height: 0 }}>
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            {colors.map((c, i) => (
+              <stop
+                key={i}
+                offset={`${(i / (colors.length - 1)) * 100}%`}
+                stopColor={c}
+              />
+            ))}
+          </linearGradient>
+        </defs>
+      </svg>
+      {/* Show exact value, not percentage */}
+      <div className="text-xl font-semibold">{displayValue}</div>
+    </CircularProgressbarWithChildren>
+  );
+};
+
+const Dashboard = ({ role: propRole }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const [facultyDetails, setFacultyDetails] = useState(
-    location.state?.facultyDetails || (() => {
-      const stored = localStorage.getItem("facultyDetails");
-      return stored ? JSON.parse(stored) : null;
-    })()
+    location.state?.facultyDetails ||
+      (() => {
+        const stored = localStorage.getItem("facultyDetails");
+        return stored ? JSON.parse(stored) : null;
+      })()
   );
 
   useEffect(() => {
@@ -48,9 +105,9 @@ const Dashboard = () => {
     }
   }, [facultyDetails, navigate]);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [role, setRole] = useState(facultyDetails?.isAdmin ? "admin" : "faculty");
-
+  const [role, setRole] = useState(
+    propRole || (facultyDetails?.isAdmin ? "admin" : "faculty")
+  );
   const [quizzes, setQuizzes] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(
     facultyDetails?.subjects?.[0] || ""
@@ -58,17 +115,13 @@ const Dashboard = () => {
   const [subjectQuizzes, setSubjectQuizzes] = useState([]);
   const [selectedQuizId, setSelectedQuizId] = useState("");
   const [selectedQuiz, setSelectedQuiz] = useState(null);
-
   const [faculties, setFaculties] = useState([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState(null);
-
   const [csvFile, setCsvFile] = useState(null);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const sidebarRef = useRef();
-
+  // ---------------- API CALLS ----------------
   const fetchQuizzes = async (facultyId = null) => {
     if (!facultyDetails?._id && role === "faculty") return;
     setLoading(true);
@@ -106,7 +159,9 @@ const Dashboard = () => {
   const fetchAllFaculties = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:5000/api/faculty/getall");
+      const response = await axios.get(
+        "http://localhost:5000/api/faculty/getall"
+      );
       setFaculties(response.data.data || []);
     } catch (err) {
       console.error("fetchAllFaculties error:", err);
@@ -136,7 +191,10 @@ const Dashboard = () => {
     const name = prompt("Update name:", faculty.name) ?? faculty.name;
     const email = prompt("Update email:", faculty.email) ?? faculty.email;
     axios
-      .put(`http://localhost:5000/api/faculty/update/${faculty._id}`, { name, email })
+      .put(`http://localhost:5000/api/faculty/update/${faculty._id}`, {
+        name,
+        email
+      })
       .then(() => {
         alert("Faculty updated!");
         fetchAllFaculties();
@@ -153,7 +211,7 @@ const Dashboard = () => {
     formData.append("file", csvFile);
     try {
       await axios.post("http://localhost:5000/api/faculty/upload-csv", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data" }
       });
       alert("CSV uploaded!");
       fetchAllFaculties();
@@ -163,8 +221,30 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("facultyDetails");
+    navigate("/");
+  };
 
+  const handleDeleteQuiz = async (quizId) => {
+    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/quiz/${quizId}`);
+      alert("Quiz deleted successfully!");
+      fetchQuizzes(selectedFacultyId || undefined);
+    } catch (err) {
+      console.error("handleDeleteQuiz error:", err);
+      alert("Failed to delete quiz");
+    }
+  };
 
+  const handleUpdateQuiz = (quizId) => {
+    navigate("/update-quiz", {
+      state: { quizId, facultyDetails, role, selectedFacultyId }
+    });
+  };
+
+  // ---------------- EFFECTS ----------------
   useEffect(() => {
     if (role === "faculty") {
       fetchQuizzes();
@@ -201,45 +281,25 @@ const Dashboard = () => {
     setSelectedQuiz(q || null);
   }, [selectedQuizId, quizzes]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-        setSidebarOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  // ---------------- QUIZ COUNTS ----------------
+  const completedQuizCount = quizzes.filter((q) => {
+    const comp = q.completed?.length || 0;
+    const lim = q.limit || 0;
+    return lim > 0 && comp >= lim;
+  }).length;
 
-  const handleLogout = () => {
-    localStorage.removeItem("facultyDetails");
-    navigate("/");
-  };
+  const inProgressQuizCount = quizzes.filter((q) => {
+    const comp = q.completed?.length || 0;
+    const lim = q.limit || 0;
+    return lim > 0 && comp < lim;
+  }).length;
 
-  const handleCreateQuiz = () => {
-    navigate("/faculty-dashboard", { state: { facultyDetails } });
-  };
+  const pendingQuizCount = quizzes.length - completedQuizCount;
 
-  const handleDeleteQuiz = async (quizId) => {
-    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
-    try {
-      await axios.delete(`http://localhost:5000/api/quiz/${quizId}`);
-      alert("Quiz deleted successfully!");
-      fetchQuizzes(selectedFacultyId || undefined);
-    } catch (err) {
-      console.error("handleDeleteQuiz error:", err);
-      alert("Failed to delete quiz");
-    }
-  };
+  const completedStudents = selectedQuiz?.completed?.length || 0;
+  const remainingStudents = (selectedQuiz?.limit || 70) - completedStudents;
 
-  const handleUpdateQuiz = (quizId) => {
-    navigate("/update-quiz", {
-      state: { quizId, facultyDetails, role, selectedFacultyId },
-    });
-  };
-
+  // ---------------- UI ----------------
   if (!facultyDetails) {
     return (
       <div className="p-6 font-sans text-gray-800">
@@ -254,249 +314,77 @@ const Dashboard = () => {
     return <div className="p-6 font-sans text-red-600">Error: {error}</div>;
   }
 
-  // Compute counts for completed-quiz / in-progress
-  const completedQuizCount = quizzes.filter((q) => {
-    const comp = q.completed?.length || 0;
-    const lim = q.limit || 0;
-    return lim > 0 && comp >= lim;
-  }).length;
-  const inProgressQuizCount = quizzes.filter((q) => {
-    const comp = q.completed?.length || 0;
-    const lim = q.limit || 0;
-    // either some completed but not full, or zero but limit > 0
-    return lim > 0 && comp < lim;
-  }).length;
-
-  const completedStudents = selectedQuiz?.completed?.length || 0;
-  const remainingStudents = (selectedQuiz?.limit || 70) - completedStudents;
-
   return (
     <div className="flex min-h-screen font-sans bg-gray-50 text-gray-800">
-      {/* Sidebar */}
-      {sidebarOpen && (
-        <aside
-          ref={sidebarRef}
-          className="h-screen w-64 bg-white p-6 fixed z-20 flex flex-col justify-between shadow-xl rounded-tr-xl rounded-br-xl border-l-2 border-blue-500"
-        >
-          <div>
-            <h2 className="text-xl font-bold mb-6 border-b border-blue-500 pb-2">
-              Faculty Profile
-            </h2>
-            <div className="space-y-3 text-sm bg-gray-100 p-4 rounded-md shadow-inner">
-              <div>
-                <span className="font-semibold">Name:</span> {facultyDetails.name}
-              </div>
-              <div>
-                <span className="font-semibold">Email:</span> {facultyDetails.email}
-              </div>
-              <div>
-                <span className="font-semibold">Department:</span> {facultyDetails.department}
-              </div>
-              {facultyDetails.isAdmin && (
-                <div>
-                  <span className="font-semibold">Role:</span>{" "}
-                  <select
-                    value={role}
-                    onChange={(e) => {
-                      setRole(e.target.value);
-                      setSelectedFacultyId(null);
-                      setQuizzes([]);
-                      setSelectedQuizId("");
-                    }}
-                    className="ml-2 border border-blue-500 rounded-md px-2 py-1 bg-white text-blue-500"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="faculty">Faculty</option>
-                  </select>
-                </div>
-              )}
-              {!facultyDetails.isAdmin && (
-                <div>
-                  <span className="font-semibold">Role:</span> Faculty
-                </div>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="bg-blue-500 hover:brightness-110 w-full py-2 rounded-md transition font-medium shadow-md mt-6 text-white"
-          >
-            Logout
-          </button>
-        </aside>
-      )}
-
       <div className="flex-grow">
-        <Navbar
-          userName={`Hey, ${facultyDetails.name}`}
-          onProfileClick={() => setSidebarOpen((prev) => !prev)}
-        />
+        <Navbar userName={`Hey, ${facultyDetails.name}`} />
 
         <main className="p-8">
-          {/* Admin Section */}
-          {role === "admin" && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">All Faculties</h2>
-
-              {/* CSV Upload */}
-              <div className="mb-4">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
-                  className="mr-2"
-                />
-                <button
-                  onClick={handleUploadCSV}
-                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
-                >
-                  Upload CSV
-                </button>
-              </div>
-
-              {/* Faculty Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {faculties.map((fac) => (
-                  <div
-                    key={fac._id}
-                    className="bg-white p-4 rounded-lg shadow-md border hover:bg-blue-50"
-                  >
-                    <h3 className="font-semibold">{fac.name}</h3>
-                    <p>Email: {fac.email}</p>
-                    <p>Department: {fac.department}</p>
-                    <p>Subjects: {fac.subjects.join(", ")}</p>
-                    <div className="mt-2 space-x-2">
-                      <button
-                        onClick={() => handleUpdateFaculty(fac)}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded"
-                      >
-                        Update
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFaculty(fac._id)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedFacultyId(fac._id);
-                          fetchQuizzes(fac._id);
-                        }}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
-                      >
-                        View Quizzes
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {selectedFacultyId && quizzes.length === 0 && (
-                <div className="mt-6 text-gray-600">
-                  No quizzes created by this faculty yet.
-                </div>
-              )}
-
-              {selectedFacultyId && quizzes.length > 0 && (
-                <div className="mt-6 space-y-3">
-                  <h3 className="font-semibold text-lg mb-2">
-                    Quizzes for{" "}
-                    {faculties.find((f) => f._id === selectedFacultyId)?.name}
-                  </h3>
-                  {quizzes.map((q) => (
-                    <div
-                      key={q._id}
-                      className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm"
-                    >
-                      <span>
-                        {q.title} ({q.subject})
-                      </span>
-                      <div className="space-x-2">
-                        <button
-                          onClick={() => handleUpdateQuiz(q._id)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
-                        >
-                          Update
-                        </button>
-                        <button
-                          onClick={() => handleDeleteQuiz(q._id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Faculty Section */}
-          {role === "faculty" && quizzes.length === 0 ? (
-            <div className="text-center mt-20">
-              <h2 className="text-2xl font-semibold">No quizzes created yet!</h2>
-              <button
-                onClick={handleCreateQuiz}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium"
-              >
-                Create Quiz
-              </button>
-            </div>
-          ) : role === "faculty" && (
-            <div className="space-y-6">
-              {/* First Row: Completed / In‑Progress Quizzes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* FACULTY SECTION */}
+          {role === "faculty" && (
+            <div className="space-y-8">
+              {/* Top Circular Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {/* Completed */}
                 <motion.div
-                  className="bg-white text-green-600 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
+                  className="bg-white rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <h3 className="font-semibold mb-2 text-lg">Completed Quizzes</h3>
-                  <p className="text-4xl font-bold">
-                    <AnimatedNumber value={completedQuizCount} />
-                  </p>
+                  <div style={{ width: 100, height: 100 }}>
+                    <AnimatedProgressCircle
+                      value={completedQuizCount}
+                      displayValue={completedQuizCount}
+                      colors={["#16a34a", "#4ade80"]}
+                    />
+                  </div>
+                  <h3 className="font-semibold mt-4 text-green-600">
+                    Completed Quizzes
+                  </h3>
                 </motion.div>
 
+                {/* Pending */}
                 <motion.div
-                  className="bg-white text-yellow-600 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
+                  className="bg-white rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                  <h3 className="font-semibold mb-2 text-lg">In Progress Quizzes</h3>
-                  <p className="text-4xl font-bold">
-                    <AnimatedNumber value={inProgressQuizCount} />
-                  </p>
+                  <div style={{ width: 100, height: 100 }}>
+                    <AnimatedProgressCircle
+                      value={pendingQuizCount}
+                      displayValue={pendingQuizCount}
+                      colors={["#f97316", "#fb923c"]}
+                    />
+                  </div>
+                  <h3 className="font-semibold mt-4 text-orange-600">
+                    Pending Quizzes
+                  </h3>
                 </motion.div>
-              </div>
 
-              {/* Second Row: Total Quizzes & Create Quiz */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Total */}
                 <motion.div
-                  className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
-                  initial={{ opacity: 0, y: 30 }}
+                  className="bg-white rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <h3 className="font-semibold mb-2 text-lg">Total Quizzes</h3>
-                  <p className="text-4xl font-bold">{quizzes.length}</p>
-                </motion.div>
-
-                <motion.div
-                  className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center cursor-pointer hover:scale-105"
-                  whileHover={{ scale: 1.05 }}
-                  onClick={handleCreateQuiz}
-                >
-                  <h3 className="font-semibold mb-2 text-lg">Create Quiz</h3>
-                  <p className="text-3xl font-bold">+</p>
+                  <div style={{ width: 100, height: 100 }}>
+                    <AnimatedProgressCircle
+                      value={quizzes.length}
+                      displayValue={quizzes.length}
+                      colors={["#3b82f6", "#60a5fa"]}
+                    />
+                  </div>
+                  <h3 className="font-semibold mt-4 text-blue-600">
+                    Total Quizzes
+                  </h3>
                 </motion.div>
               </div>
 
-              {/* Subject & Quiz selection */}
-              <div className="mt-4 flex flex-col sm:flex-row gap-4">
+              {/* Subject & Quiz Selection */}
+              <div className="mt-6 flex flex-col sm:flex-row gap-6">
                 <label className="font-medium">
                   Select Subject:{" "}
                   <select
@@ -528,61 +416,71 @@ const Dashboard = () => {
                 </label>
               </div>
 
-              {/* Stats Cards */}
+              {/* Pie Chart for Selected Quiz */}
               {selectedQuiz && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <motion.div
-                    className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg text-center"
+                    className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <h3 className="font-semibold mb-2 text-lg">Completed</h3>
-                    <p className="text-4xl font-bold">
-                      <AnimatedNumber value={completedStudents} />
-                    </p>
+                    <h3 className="font-semibold mb-4 text-lg text-blue-600">
+                      {selectedQuiz.title} - Completion Status
+                    </h3>
+                    <Plot
+                      data={[
+                        {
+                          values: [completedStudents, remainingStudents],
+                          labels: ["Completed", "Remaining"],
+                          type: "pie",
+                          marker: {
+                            colors: ["#16a34a", "#f97316"],
+                            line: { color: "#fff", width: 2 }
+                          },
+                          textinfo: "label+value", // show label and actual value
+                          hole: 0.4
+                        }
+                      ]}
+                      layout={{
+                        paper_bgcolor: "white",
+                        plot_bgcolor: "white",
+                        font: { color: "#1e3a8a", size: 14 },
+                        height: 320,
+                        width: 320
+                      }}
+                      config={{ displayModeBar: false }}
+                    />
                   </motion.div>
 
-                  <motion.div
-                    className="bg-white text-blue-500 rounded-2xl p-6 shadow-lg text-center"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                  >
-                    <h3 className="font-semibold mb-2 text-lg">Remaining</h3>
-                    <p className="text-4xl font-bold">
-                      <AnimatedNumber value={remainingStudents} />
-                    </p>
-                  </motion.div>
+                  {/* Completed vs Remaining Stats */}
+                  <div className="flex flex-col gap-6">
+                    <div className="bg-white rounded-xl p-6 shadow-lg text-center">
+                      <h3 className="font-semibold mb-2 text-green-600">
+                        Completed
+                      </h3>
+                      <p className="text-3xl font-bold">
+                        <AnimatedNumber value={completedStudents} />
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-xl p-6 shadow-lg text-center">
+                      <h3 className="font-semibold mb-2 text-orange-600">
+                        Remaining
+                      </h3>
+                      <p className="text-3xl font-bold">
+                        <AnimatedNumber value={remainingStudents} />
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Charts */}
-              {selectedQuiz && (
-                <div className="mt-6 flex flex-col items-center space-y-6">
-                  <Plot
-                    data={[
-                      {
-                        values: [completedStudents, remainingStudents],
-                        labels: ["Completed", "Remaining"],
-                        type: "pie",
-                        marker: { colors: ["#00bfff", "#87cefa"] },
-                        textinfo: "label+percent",
-                        textposition: "inside",
-                        hole: 0.4,
-                      },
-                    ]}
-                    layout={{
-                      title: selectedQuiz?.title + " - Completion Status",
-                      paper_bgcolor: "white",
-                      plot_bgcolor: "white",
-                      font: { color: "#1e3a8a" },
-                      height: 400,
-                      width: 400,
-                    }}
-                    config={{ displayModeBar: false }}
-                  />
-
+              {/* Bar Graph for All Quizzes */}
+              {quizzes.length > 0 && (
+                <div className="mt-10 bg-white p-6 rounded-xl shadow-lg">
+                  <h3 className="font-semibold mb-6 text-lg text-blue-600">
+                    All Quizzes Completion Status
+                  </h3>
                   <Plot
                     data={[
                       {
@@ -590,29 +488,43 @@ const Dashboard = () => {
                         y: quizzes.map((q) => q.completed?.length || 0),
                         name: "Completed",
                         type: "bar",
-                        marker: { color: "#00bfff" },
+                        marker: {
+                          color: quizzes.map(
+                            (_, idx) => `rgba(${22 + idx * 5},163,74,0.8)`
+                          )
+                        }
                       },
                       {
                         x: quizzes.map((q) => `${q.subject} - ${q.title}`),
-                        y: quizzes.map((q) => (q.limit || 70) - (q.completed?.length || 0)),
+                        y: quizzes.map(
+                          (q) => (q.limit || 70) - (q.completed?.length || 0)
+                        ),
                         name: "Remaining",
                         type: "bar",
-                        marker: { color: "#87cefa" },
-                      },
+                        marker: {
+                          color: quizzes.map(
+                            (_, idx) => `rgba(${249 + idx * 2},115,22,0.8)`
+                          )
+                        }
+                      }
                     ]}
                     layout={{
-                      title: "All Quizzes Completion Status",
-                      barmode: "stack",
+                      barmode: "group",
                       height: 450,
-                      width: 900,
                       paper_bgcolor: "white",
                       plot_bgcolor: "white",
-                      font: { color: "#1e3a8a" },
+                      font: { color: "#1e3a8a", size: 14 },
+                      margin: { t: 30, b: 120 },
                       yaxis: {
                         title: "Students",
                         range: [0, Math.max(...quizzes.map((q) => q.limit || 70))],
+                        gridcolor: "#e5e7eb"
                       },
-                      xaxis: { tickangle: -45, automargin: true },
+                      xaxis: {
+                        tickangle: -30,
+                        automargin: true
+                      },
+                      legend: { orientation: "h", y: -0.3 }
                     }}
                     config={{ displayModeBar: false }}
                   />
