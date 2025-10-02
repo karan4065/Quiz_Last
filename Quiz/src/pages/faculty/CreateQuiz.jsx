@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
-
+import {toast,Toaster} from  'react-hot-toast'
 const CreateQuiz = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,9 +11,10 @@ const CreateQuiz = () => {
     JSON.parse(localStorage.getItem("facultyDetails"));
 
   if (!facultyDetails) {
-    navigate("/"); // force back to login if no details
+    navigate("/"); // redirect to login if no details
   }
 
+  // Quiz states
   const [quizFile, setQuizFile] = useState(null);
   const [quizTitle, setQuizTitle] = useState("");
   const [quizDuration, setQuizDuration] = useState(30);
@@ -23,10 +24,11 @@ const CreateQuiz = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [showQuizTable, setShowQuizTable] = useState(false);
 
-  // New search states
+  // Search/filter states
   const [titleSearch, setTitleSearch] = useState("");
   const [sessionFilter, setSessionFilter] = useState("");
 
+  // Image quiz states
   const [showImageForm, setShowImageForm] = useState(false);
   const [imageQuestion, setImageQuestion] = useState({
     category: "",
@@ -45,7 +47,28 @@ const CreateQuiz = () => {
   useEffect(() => {
     fetchQuizzes();
   }, []);
+ const handleDeleteQuiz = async (quizId) => {
+    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
 
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/api/quizzes/${quizId}`
+      );
+      const data = res.data;
+      console.log("Delete response:", data);
+      if (data.success) {
+        const updated = quizzes.filter((q) => q._id !== quizId);
+        setQuizzes(updated);
+        applyFilters(updated, searchTerm, selectedSession);
+        toast.success("Quiz deleted successfully!");
+      } else {
+        toast.error("Failed to delete quiz.");
+      }
+    } catch (err) {
+      console.error("delete error:", err);
+      alert("Error deleting quiz.");
+    }
+  };
   const fetchQuizzes = async () => {
     if (!facultyDetails?._id) return;
     try {
@@ -62,14 +85,7 @@ const CreateQuiz = () => {
   };
 
   const handleQuizUpload = async () => {
-    if (
-      !quizFile ||
-      !quizTitle ||
-      !quizDuration ||
-      !subject ||
-      !quizSession ||
-      !quizLimit
-    ) {
+    if (!quizFile || !quizTitle || !quizDuration || !subject || !quizSession || !quizLimit) {
       return alert("All fields are required for CSV upload");
     }
 
@@ -77,18 +93,15 @@ const CreateQuiz = () => {
     reader.onload = async (e) => {
       const csvText = e.target.result;
       try {
-        const res = await axios.post(
-          "http://localhost:5000/api/quizzes/upload",
-          {
-            title: quizTitle,
-            facultyId: facultyDetails._id,
-            duration: quizDuration,
-            limit: quizLimit,
-            session: quizSession,
-            subject,
-            csvData: csvText,
-          }
-        );
+        const res = await axios.post("http://localhost:5000/api/quizzes/upload", {
+          title: quizTitle,
+          facultyId: facultyDetails._id,
+          duration: quizDuration,
+          limit: quizLimit,
+          session: quizSession,
+          subject,
+          csvData: csvText,
+        });
         if (res.data.success) {
           await fetchQuizzes();
           resetForm();
@@ -103,106 +116,21 @@ const CreateQuiz = () => {
     reader.readAsText(quizFile);
   };
 
-  const handleDeleteQuiz = async (quizId) => {
-    if (!window.confirm("Delete this quiz?")) return;
-    try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/quizzes/${quizId}`
-      );
-      if (res.data.success) {
-        setQuizzes(quizzes.filter((q) => q._id !== quizId));
-      } else {
-        alert("Delete failed: " + (res.data.message || ""));
-      }
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Delete failed");
-    }
-  };
-
-  const handleAddImageQuestion = async () => {
-    if (!currentQuizId) {
-      alert("Quiz not selected");
-      return;
-    }
-    const quiz = quizzes.find((q) => q._id === currentQuizId);
-    if (!quiz) {
-      alert("Quiz not found");
-      return;
-    }
-
-    const {
-      category,
-      image,
-      description,
-      optionA,
-      optionB,
-      optionC,
-      optionD,
-      correctOption,
-    } = imageQuestion;
-
-    if (!category || !optionA || !optionB || !optionC || !optionD) {
-      return alert("All fields except image are required");
-    }
-
-    const formData = new FormData();
-    formData.append("category", category);
-    formData.append("description", description || "");
-    formData.append(
-      "options",
-      JSON.stringify([optionA, optionB, optionC, optionD])
-    );
-    formData.append("answer", imageQuestion[`option${correctOption}`]);
-    formData.append("subject", quiz.subject);
-    if (image) {
-      formData.append("image", image);
-    }
-
-    try {
-      const res = await axios.post(
-        `http://localhost:5000/api/quizzes/${currentQuizId}/addqs`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      if (res.data.success) {
-        resetImageForm();
-        fetchQuizzes();
-      } else {
-        alert("Add question failed: " + (res.data.message || ""));
-      }
-    } catch (err) {
-      console.error("Add image question error:", err);
-      alert("Add image question failed");
-    }
-  };
-
   const handleCreateImageQuiz = async () => {
-    const {
-      category,
-      image,
-      description,
-      optionA,
-      optionB,
-      optionC,
-      optionD,
-      correctOption,
-      subject: imgSubject,
-    } = imageQuestion;
+    // Use subject from imageQuestion if isNewQuiz
+    const quizSubject = isNewQuiz ? imageQuestion.subject : subject;
 
     if (
       !quizTitle ||
       !quizDuration ||
       !quizLimit ||
       !quizSession ||
-      !subject ||
-      !category ||
-      !optionA ||
-      !optionB ||
-      !optionC ||
-      !optionD
+      !quizSubject ||
+      !imageQuestion.category ||
+      !imageQuestion.optionA ||
+      !imageQuestion.optionB ||
+      !imageQuestion.optionC ||
+      !imageQuestion.optionD
     ) {
       return alert("All required fields must be filled");
     }
@@ -213,27 +141,29 @@ const CreateQuiz = () => {
     formData.append("limit", quizLimit);
     formData.append("session", quizSession);
     formData.append("facultyId", facultyDetails._id);
-    formData.append("category", category);
-    formData.append("description", description || "");
+    formData.append("subject", quizSubject);
+    formData.append("category", imageQuestion.category);
+    formData.append("description", imageQuestion.description || "");
     formData.append(
       "options",
-      JSON.stringify([optionA, optionB, optionC, optionD])
+      JSON.stringify([
+        imageQuestion.optionA,
+        imageQuestion.optionB,
+        imageQuestion.optionC,
+        imageQuestion.optionD,
+      ])
     );
-    formData.append("answer", imageQuestion[`option${correctOption}`]);
-    formData.append("subject", subject);
-    if (image) {
-      formData.append("image", image);
-    }
+    formData.append("answer", imageQuestion[`option${imageQuestion.correctOption}`]);
+    if (imageQuestion.image) formData.append("image", imageQuestion.image);
 
     try {
       const res = await axios.post(
         "http://localhost:5000/api/quizzes/imagebaseqs",
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       if (res.data.success) {
+        alert("Image Quiz created successfully!");
         resetForm();
         fetchQuizzes();
       } else {
@@ -242,6 +172,46 @@ const CreateQuiz = () => {
     } catch (err) {
       console.error("Create image quiz error:", err);
       alert("Create image quiz failed");
+    }
+  };
+
+  const handleAddImageQuestion = async () => {
+    if (!currentQuizId) return alert("Quiz not selected");
+
+    const quiz = quizzes.find((q) => q._id === currentQuizId);
+    if (!quiz) return alert("Quiz not found");
+
+    const { category, image, description, optionA, optionB, optionC, optionD, correctOption } =
+      imageQuestion;
+
+    if (!category || !optionA || !optionB || !optionC || !optionD) {
+      return alert("All fields except image are required");
+    }
+
+    const formData = new FormData();
+    formData.append("category", category);
+    formData.append("description", description || "");
+    formData.append("options", JSON.stringify([optionA, optionB, optionC, optionD]));
+    formData.append("answer", imageQuestion[`option${correctOption}`]);
+    formData.append("subject", quiz.subject);
+    if (image) formData.append("image", image);
+
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/quizzes/${currentQuizId}/addqs`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      if (res.data.success) {
+        alert("Question added successfully!");
+        resetImageForm();
+        fetchQuizzes();
+      } else {
+        alert("Add question failed: " + (res.data.message || ""));
+      }
+    } catch (err) {
+      console.error("Add image question error:", err);
+      alert("Add image question failed");
     }
   };
 
@@ -271,20 +241,15 @@ const CreateQuiz = () => {
     setIsNewQuiz(false);
   };
 
-  // Derive the set of sessions available from quizzes
-  const allSessions = Array.from(new Set(quizzes.map((q) => q.session))).filter(
-    (s) => s !== undefined && s !== null
+  const allSessions = Array.from(new Set(quizzes.map((q) => q.session))).filter(Boolean);
+  const filteredQuizzes = quizzes.filter((q) =>
+    q.title.toLowerCase().includes(titleSearch.toLowerCase()) &&
+    (sessionFilter ? q.session === sessionFilter : true)
   );
-
-  // Filter quizzes based on titleSearch and sessionFilter
-  const filteredQuizzes = quizzes.filter((q) => {
-    const titleMatch = q.title.toLowerCase().includes(titleSearch.toLowerCase());
-    const sessionMatch = sessionFilter ? q.session === sessionFilter : true;
-    return titleMatch && sessionMatch;
-  });
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
+      <Toaster/>
       <Navbar userName={`Hey, ${facultyDetails.name}`} />
 
       <h2 className="text-2xl font-semibold mb-6 mt-6 text-gray-800">Manage Quizzes</h2>
@@ -330,9 +295,7 @@ const CreateQuiz = () => {
             >
               <option value="">Select Subject</option>
               {facultyDetails?.subjects?.map((subj, idx) => (
-                <option key={idx} value={subj}>
-                  {subj}
-                </option>
+                <option key={idx} value={subj}>{subj}</option>
               ))}
             </select>
           </div>
@@ -345,14 +308,14 @@ const CreateQuiz = () => {
                 onChange={(e) => setQuizFile(e.target.files[0])}
                 className="block w-full border border-[#243278] rounded-md text-sm text-gray-600
                   file:mr-4 file:py-2 file:px-4
-                    file:border-0
+                  file:border-0
                   file:text-sm file:font-semibold
-                  file:bg-[#243278]   file:text-white
-                  hover:file:bg-[#162675]  "
+                  file:bg-[#243278] file:text-white
+                  hover:file:bg-[#162675]"
               />
               <button
                 onClick={handleQuizUpload}
-                className="w-full bg-[#243278]   hover:bg-[#202c6b]   text-white font-medium py-3 rounded-md transition"
+                className="w-full bg-[#243278] hover:bg-[#202c6b] text-white font-medium py-3 rounded-md transition"
               >
                 Upload via CSV
               </button>
@@ -362,8 +325,9 @@ const CreateQuiz = () => {
                 onClick={() => {
                   setIsNewQuiz(true);
                   setShowImageForm(true);
+                  setImageQuestion({ ...imageQuestion, subject }); // fix: default subject
                 }}
-                className="w-full bg-[#17ce54]    hover:bg-[#1b9e47]   text-white font-medium py-3 rounded-md transition"
+                className="w-full bg-[#17ce54] hover:bg-[#1b9e47] text-white font-medium py-3 rounded-md transition"
               >
                 Create Image-based Quiz
               </button>
@@ -371,9 +335,7 @@ const CreateQuiz = () => {
           </div>
         </div>
       </div>
-
-      {/* Search / Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col md:flex-row md:items-center md:space-x-4">
+ <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col md:flex-row md:items-center md:space-x-4">
         <div className="flex-1 mb-3 md:mb-0">
           <input
             type="text"
@@ -599,6 +561,8 @@ const CreateQuiz = () => {
           </div>
         </div>
       )}
+      {/* Table and Image modal code remains same as previous version */}
+
     </div>
   );
 };

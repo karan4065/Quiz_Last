@@ -33,17 +33,25 @@ export const getFacultyQuizzes = async (req, res) => {
 
 
 export const registerFaculty = async (req, res) => {
-  const { name, email, department, phone, password, isAdmin, subjects, address } = req.body;
+  const { name, email, department, phone, isAdmin, subjects, address } = req.body;
 
   try {
-    const facultyPassword = password || email; 
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required to set as password",
+      });
+    }
+
+    // Use phone as password and hash it
+    const hashedPassword = await bcrypt.hash(phone, 10); // 10 salt rounds
 
     const user = await Faculty.create({
       name,
       email,
       department,
       phone,
-      password: facultyPassword,
+      password: hashedPassword,
       isAdmin: isAdmin || false,
       subjects: Array.isArray(subjects) ? subjects : [],
       address: address || "",

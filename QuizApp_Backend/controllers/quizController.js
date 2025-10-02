@@ -61,45 +61,90 @@ export const addImageQuestion = async (req, res) => {
 };
 
 // ---------------- Create quiz with a single image-based question ----------------
+// ---------------- Create quiz with image question ----------------
 export const createQuizWithImageQuestion = async (req, res) => {
   try {
-    const { title, duration, subject, category, question, options, answer, facultyId, description } = req.body;
+    const {
+      title,
+      duration,
+      subject,
+      category,
+      options,
+      answer,
+      facultyId,
+      description,
+      limit,
+      session,
+    } = req.body;
 
-    if (!title || !duration || !subject || !category || !options || !answer || !facultyId) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+    // Validate required fields
+    if (
+      !title ||
+      !duration ||
+      !subject ||
+      !category ||
+      !options ||
+      !answer ||
+      !facultyId ||
+      !limit ||
+      !session
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
+    // Parse options
     let parsedOptions;
-    try { parsedOptions = JSON.parse(options); } 
-    catch (e) { return res.status(400).json({ success: false, message: "Invalid options format" }); }
+    try {
+      parsedOptions = JSON.parse(options);
+    } catch (e) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid options format" });
+    }
 
     if (!Array.isArray(parsedOptions) || parsedOptions.length < 2) {
-      return res.status(400).json({ success: false, message: "At least 2 options are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "At least 2 options are required" });
     }
-    if (!parsedOptions.includes(answer)) {
-      return res.status(400).json({ success: false, message: "Answer must be one of the options" });
-    }
-    if (!req.file) return res.status(400).json({ success: false, message: "Image is required" });
 
+    if (!parsedOptions.includes(answer)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Answer must be one of the options" });
+    }
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Image is required" });
+    }
+
+    // Upload image to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: "quiz_images" },
-        (error, result) => error ? reject(error) : resolve(result)
+        (error, result) => (error ? reject(error) : resolve(result))
       );
       stream.end(req.file.buffer);
     });
 
+    // Create new quiz
     const quiz = new Quiz({
       title,
       subject,
       duration,
+      limit,
+      session,
       createdBy: facultyId,
       categories: [
         {
           category,
           questions: [
             {
-              question: question || "",
+              question: "",
               image: uploadResult.secure_url,
               description: description || "",
               options: parsedOptions,
@@ -112,8 +157,9 @@ export const createQuizWithImageQuestion = async (req, res) => {
     });
 
     await quiz.save();
-    res.status(201).json({ success: true, message: "Quiz created with image question", data: quiz });
-
+    res
+      .status(201)
+      .json({ success: true, message: "Quiz created with image question", data: quiz });
   } catch (err) {
     console.error("Error in createQuizWithImageQuestion:", err);
     res.status(500).json({ success: false, message: "Server error", error: err.message });

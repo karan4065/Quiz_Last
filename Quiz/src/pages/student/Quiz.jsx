@@ -30,14 +30,14 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect }) => (
         <img
           src={question.image}
           alt="Question"
-          className="w-full max-w-[90%] md:max-w-2xl max-h-[400px] object-contain border rounded-lg shadow-md select-none"
+          className="w-full max-w-full md:max-w-2xl max-h-[250px] object-contain border rounded-lg shadow-md select-none"
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}
         />
       </div>
     )}
 
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {question.options.map((opt, idx) => (
         <OptionButton
           key={idx}
@@ -60,7 +60,7 @@ const NavigationButtons = ({
   submitting,
   disabled,
 }) => (
-  <div className="mt-6 flex justify-between select-none">
+  <div className="mt-6 flex flex-wrap justify-between gap-3 select-none">
     <button
       disabled={currentIndex === 0 || disabled}
       onClick={onPrev}
@@ -125,12 +125,9 @@ const Quiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
 
+  // Prevent copy, right click, drag, select
   useEffect(() => {
     const prevent = (e) => e.preventDefault();
-    document.addEventListener("copy", prevent);
-    document.addEventListener("contextmenu", prevent);
-    document.addEventListener("dragstart", prevent);
-    document.addEventListener("selectstart", prevent);
     const keyListener = (e) => {
       if (
         e.key === "F12" ||
@@ -139,6 +136,10 @@ const Quiz = () => {
       )
         e.preventDefault();
     };
+    document.addEventListener("copy", prevent);
+    document.addEventListener("contextmenu", prevent);
+    document.addEventListener("dragstart", prevent);
+    document.addEventListener("selectstart", prevent);
     document.addEventListener("keydown", keyListener);
     return () => {
       document.removeEventListener("copy", prevent);
@@ -149,6 +150,7 @@ const Quiz = () => {
     };
   }, []);
 
+  // Freeze quiz on tab change
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden" && !quizCompleted && !quizFrozen) {

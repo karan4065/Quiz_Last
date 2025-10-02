@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
-import { FaTrash, FaEdit } from "react-icons/fa";
 import Papa from "papaparse";
 
 const AdminDashboard = () => {
@@ -18,20 +17,34 @@ const AdminDashboard = () => {
     email: "",
     department: "",
     phone: "",
-    password: "",
     isAdmin: false,
     subjects: [""],
   });
   const [csvFaculties, setCsvFaculties] = useState([]);
   const cardRef = useRef();
+  const [adminDept, setAdminDept] = useState("");
 
-  // Fetch all faculties
+  // Get logged-in admin details
+  useEffect(() => {
+    const token = localStorage.getItem("facultyDetails");
+    if (!token) {
+      navigate("/");
+      return;
+    }
+    const adminDetails = JSON.parse(token);
+    setAdminDept(adminDetails.department);
+    setFormFaculty((prev) => ({ ...prev, department: adminDetails.department }));
+  }, [navigate]);
+
+  // Fetch faculties
   const fetchFaculties = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/faculty");
+      const res = await axios.get("http://localhost:5000/api/faculty/getall");
       if (res.data.success) {
-        setFaculties(res.data.data);
-        setFilteredFaculties(res.data.data);
+        const deptFaculties = res.data.data.filter(
+          (f) => f.department === adminDept && !f.isAdmin
+        );
+        setFaculties(deptFaculties);
       }
     } catch (err) {
       console.error("Error fetching faculties:", err);
@@ -39,11 +52,15 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchFaculties();
-  }, []);
+    if (adminDept) fetchFaculties();
+  }, [adminDept]);
 
-  // Filter faculties
+  // Search filter
   useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredFaculties([]);
+      return;
+    }
     const filtered = faculties.filter(
       (f) =>
         f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,7 +78,6 @@ const AdminDashboard = () => {
     }));
   };
 
-  // Handle subjects
   const handleSubjectChange = (index, value) => {
     const newSubjects = [...formFaculty.subjects];
     newSubjects[index] = value;
@@ -77,7 +93,6 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       if (selectedFaculty) {
-        // Update
         const res = await axios.put(
           `http://localhost:5000/api/faculty/${selectedFaculty._id}`,
           formFaculty
@@ -88,7 +103,6 @@ const AdminDashboard = () => {
           fetchFaculties();
         }
       } else {
-        // Add
         const res = await axios.post(
           "http://localhost:5000/api/faculty/register",
           formFaculty
@@ -98,9 +112,8 @@ const AdminDashboard = () => {
           setFormFaculty({
             name: "",
             email: "",
-            department: "",
+            department: adminDept,
             phone: "",
-            password: "",
             isAdmin: false,
             subjects: [""],
           });
@@ -139,9 +152,8 @@ const AdminDashboard = () => {
         const parsedData = results.data.map((row) => ({
           name: row.name,
           email: row.email,
-          department: row.department,
+          department: adminDept,
           phone: row.phone,
-          password: row.password,
           isAdmin: row.isAdmin === "true" || row.isAdmin === true,
           subjects: row.subjects ? row.subjects.split(";") : [],
         }));
@@ -220,35 +232,37 @@ const AdminDashboard = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          {/* Faculty List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredFaculties.map((faculty) => (
-              <div
-                key={faculty._id}
-                className="bg-white p-4 shadow-md rounded-md cursor-pointer hover:shadow-lg"
-                onClick={() => {
-                  setSelectedFaculty(faculty);
-                  setFormFaculty({
-                    name: faculty.name,
-                    email: faculty.email,
-                    department: faculty.department,
-                    phone: faculty.phone,
-                    password: faculty.password,
-                    isAdmin: faculty.isAdmin,
-                    subjects: faculty.subjects.length ? faculty.subjects : [""],
-                  });
-                }}
-              >
-                <h3 className="font-semibold text-lg text-[#243278]">{faculty.name}</h3>
-                <p className="text-sm text-gray-600">{faculty.email}</p>
-                <p className="text-sm text-gray-600">
-                  Role: {faculty.isAdmin ? "Admin" : "Faculty"}
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Faculty Cards */}
+          {searchTerm.trim() !== "" && filteredFaculties.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredFaculties.map((faculty) => (
+                <div
+                  key={faculty._id}
+                  className="bg-white p-5 rounded-xl shadow-lg cursor-pointer transition hover:scale-105 hover:shadow-2xl"
+                  onClick={() => {
+                    setSelectedFaculty(faculty);
+                    setFormFaculty({
+                      name: faculty.name,
+                      email: faculty.email,
+                      department: faculty.department,
+                      phone: faculty.phone,
+                      isAdmin: faculty.isAdmin,
+                      subjects: faculty.subjects.length ? faculty.subjects : [""],
+                    });
+                  }}
+                >
+                  <h3 className="text-lg font-bold text-[#243278]">{faculty.name}</h3>
+                  <p className="text-gray-600 text-sm">{faculty.email}</p>
+                  <p className="text-gray-500 text-sm">Dept: {faculty.department}</p>
+                  <p className="text-gray-500 text-sm">
+                    Subjects: {faculty.subjects.join(", ")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* Selected Faculty / Add Form */}
+          {/* Add/Edit Faculty Form */}
           <div
             ref={cardRef}
             className="mt-6 bg-white p-6 shadow-md rounded-md max-w-3xl mx-auto"
@@ -277,8 +291,7 @@ const AdminDashboard = () => {
                 name="department"
                 placeholder="Department"
                 value={formFaculty.department}
-                onChange={handleChange}
-                required
+                readOnly
                 className="border p-2 rounded-md"
               />
               <input
@@ -286,15 +299,6 @@ const AdminDashboard = () => {
                 name="phone"
                 placeholder="Phone"
                 value={formFaculty.phone}
-                onChange={handleChange}
-                required
-                className="border p-2 rounded-md"
-              />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formFaculty.password}
                 onChange={handleChange}
                 required
                 className="border p-2 rounded-md"
@@ -318,15 +322,6 @@ const AdminDashboard = () => {
                   + Add Subject
                 </button>
               </div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="isAdmin"
-                  checked={formFaculty.isAdmin}
-                  onChange={handleChange}
-                />
-                <span>Admin</span>
-              </label>
               <div className="col-span-2 flex gap-2">
                 <button
                   type="submit"
@@ -365,7 +360,7 @@ const AdminDashboard = () => {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              CSV Format: name,email,department,phone,password,isAdmin,subjects (semicolon separated)
+              CSV Format: name,email,phone,isAdmin,subjects (semicolon separated)
             </p>
           </div>
         </main>

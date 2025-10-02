@@ -61,11 +61,12 @@ export const registerStudent = async (req, res) => {
         });
     }
 };
+import Faculty from '../models/Faculty.js';
+
 export const loginStudent = async (req, res) => {
   const { uid, password, quizId } = req.body;
 
   if (!uid || !password || !quizId) {
-    console.log("Missing fields:", { uid, password, quizId });
     return res.status(400).json({
       success: false,
       message: "UID, password, and quizId are required",
@@ -73,19 +74,30 @@ export const loginStudent = async (req, res) => {
   }
 
   try {
+    // Find student
     const student = await Student.findOne({ studentId: uid });
-    
     if (!student) {
-     
       return res.status(401).json({ success: false, message: "Invalid UID or password" });
     }
 
+    // Compare password
     const isMatch = await bcrypt.compare(password, student.password);
-    console.log("Password match result:", isMatch);
-
     if (!isMatch) {
-      console.log("Password does not match for UID:", uid);
       return res.status(401).json({ success: false, message: "Invalid UID or password" });
+    }
+
+    // Find the quiz with faculty populated
+    const quiz = await Quiz.findById(quizId).populate("createdBy"); // createdBy is the faculty
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: "Quiz not found" });
+    }
+
+    // Check if student's department matches faculty's department
+    if (student.department !== quiz.createdBy.department) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot take this quiz. Your department does not match the quiz creator.",
+      });
     }
 
     // Check if student already submitted this quiz
@@ -96,7 +108,6 @@ export const loginStudent = async (req, res) => {
     });
 
     if (submission) {
- 
       return res.status(403).json({
         success: false,
         message: "You have already submitted this quiz",
@@ -106,7 +117,6 @@ export const loginStudent = async (req, res) => {
 
     // Generate token
     const token = generateToken(student);
-
 
     // Send cookie
     res.cookie("token", token, {
@@ -123,7 +133,7 @@ export const loginStudent = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 
