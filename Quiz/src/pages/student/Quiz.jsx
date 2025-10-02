@@ -22,7 +22,7 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect }) => (
   <div className="bg-white p-6 rounded-xl shadow-lg mb-6 select-none transition duration-300 hover:shadow-2xl">
     <h2 className="text-2xl font-semibold mb-4">
       {question.question}
-      <span className="block text-sm text-gray-500 mt-1">{question.description}</span>
+      <span className="block text-lg text-gray-500 mt-1">{question.description}</span>
     </h2>
 
     {question.image && (

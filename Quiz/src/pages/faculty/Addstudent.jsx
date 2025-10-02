@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar"; // <-- Your sidebar component
-import Navbar from "../../components/Navbar"; // <-- Your top navbar
+import Sidebar from "../../components/Sidebar";
+import Navbar from "../../components/Navbar";
 
 const AddStudent = () => {
   const location = useLocation();
@@ -13,6 +13,7 @@ const AddStudent = () => {
 
   const [studentFile, setStudentFile] = useState(null);
   const [students, setStudents] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null); // currently open year
 
   // Add student form states
   const [addStudentId, setAddStudentId] = useState("");
@@ -45,7 +46,7 @@ const AddStudent = () => {
         });
         if (res.data.success) {
           alert("✅ Students uploaded successfully!");
-          setStudents([...students, ...res.data.data]);
+          setStudents([...(students || []), ...(res.data.data || [])]);
           setStudentFile(null);
         } else alert("❌ " + res.data.message);
       } catch (err) {
@@ -71,7 +72,7 @@ const AddStudent = () => {
       });
       if (res.data.success) {
         alert("✅ Student added successfully!");
-        setStudents([...students, res.data.data]);
+        setStudents([...(students || []), res.data.data]);
         clearAddForm();
       } else alert("❌ " + res.data.message);
     } catch (err) {
@@ -113,7 +114,11 @@ const AddStudent = () => {
       });
       if (res.data.success) {
         alert("✅ Student updated successfully!");
-        setStudents(students.map((stu) => (stu._id === editingStudent._id ? res.data.data : stu)));
+        setStudents(
+          (students || []).map((stu) =>
+            stu._id === editingStudent._id ? res.data.data : stu
+          )
+        );
         clearEditForm();
       } else alert("❌ " + res.data.message);
     } catch (err) {
@@ -129,12 +134,36 @@ const AddStudent = () => {
       const res = await axios.delete(`http://localhost:5000/api/student/${editingStudent._id}`);
       if (res.data.success) {
         alert("✅ Student deleted!");
-        setStudents(students.filter((stu) => stu._id !== editingStudent._id));
+        setStudents((students || []).filter((stu) => stu._id !== editingStudent._id));
         clearEditForm();
       }
     } catch (err) {
       console.error(err);
       alert("❌ Something went wrong.");
+    }
+  };
+
+  // 🔹 Fetch students by year with toggle
+  const fetchStudentsByYear = async (year) => {
+    if (selectedYear === year) {
+      // if already open, close it
+      setSelectedYear(null);
+      setStudents([]);
+      return;
+    }
+    try {
+      const res = await axios.get(`http://localhost:5000/api/student?year=${year}&department=IT`);
+      if (res.data.success) {
+        setStudents(res.data.data);
+        setSelectedYear(year);
+      } else {
+        setStudents([]);
+        setSelectedYear(year);
+      }
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      setStudents([]);
+      setSelectedYear(year);
     }
   };
 
@@ -171,6 +200,58 @@ const AddStudent = () => {
         <main className="p-6 bg-gray-50 flex-1">
           <h2 className="text-2xl font-semibold mb-6 text-gray-800">Manage Students</h2>
 
+          {/* 🔹 Year Filter Buttons */}
+          <div className="flex gap-4 mb-6">
+            {[1, 2, 3, 4].map((year) => (
+              <button
+                key={year}
+                onClick={() => fetchStudentsByYear(year)}
+                className="bg-[#243278] text-white px-4 py-2 rounded-md shadow-md transform transition duration-200 hover:scale-105"
+              >
+                {year} Year
+              </button>
+            ))}
+          </div>
+
+          {/* 🔹 Students Table for Selected Year */}
+          {selectedYear && (
+            <div className="overflow-x-auto mb-6">
+              <h3 className="text-lg font-semibold mb-3">{selectedYear} Year Students</h3>
+              <table className="w-full border border-gray-300 rounded-md shadow-sm">
+                <thead>
+                  <tr className="bg-[#243278] text-white">
+                    <th className="p-2 border">Sr No</th>
+                    <th className="p-2 border">Student ID</th>
+                    <th className="p-2 border">Name</th>
+                    <th className="p-2 border">Department</th>
+                    <th className="p-2 border">Email</th>
+                    <th className="p-2 border">Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.length > 0 ? (
+                    students.map((stu, index) => (
+                      <tr key={stu._id} className="hover:bg-gray-100">
+                        <td className="border p-2 text-center">{index + 1}</td>
+                        <td className="border p-2">{stu.studentId}</td>
+                        <td className="border p-2">{stu.name}</td>
+                        <td className="border p-2">{stu.department}</td>
+                        <td className="border p-2">{stu.email}</td>
+                        <td className="border p-2">{stu.phone}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="text-center p-3 border">
+                        No students found for {selectedYear} Year
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row gap-6">
             {/* Left Column - Add Student */}
             <div className="md:w-1/2 w-full">
@@ -180,7 +261,19 @@ const AddStudent = () => {
                   <input type="text" placeholder="Student ID" value={addStudentId} onChange={(e) => setAddStudentId(e.target.value)} className="border p-2 rounded-md w-full" />
                   <input type="text" placeholder="Name" value={addName} onChange={(e) => setAddName(e.target.value)} className="border p-2 rounded-md w-full" />
                   <input type="text" placeholder="Department" value={addDepartment} onChange={(e) => setAddDepartment(e.target.value)} className="border p-2 rounded-md w-full" />
-                  <input type="text" placeholder="Year" value={addYear} onChange={(e) => setAddYear(e.target.value)} className="border p-2 rounded-md w-full" />
+
+                  <select
+                    value={addYear}
+                    onChange={(e) => setAddYear(e.target.value)}
+                    className="border p-2 rounded-md w-full bg-white"
+                  >
+                    <option value="">Select Year</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+
                   <input type="email" placeholder="Email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} className="border p-2 rounded-md w-full" />
                   <input type="text" placeholder="Phone" value={addPhone} onChange={(e) => setAddPhone(e.target.value)} className="border p-2 rounded-md w-full" />
                 </div>
@@ -212,7 +305,19 @@ const AddStudent = () => {
                     <input type="text" placeholder="Student ID" value={editStudentId} onChange={(e) => setEditStudentId(e.target.value)} className="border p-2 rounded-md w-full" />
                     <input type="text" placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} className="border p-2 rounded-md w-full" />
                     <input type="text" placeholder="Department" value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} className="border p-2 rounded-md w-full" />
-                    <input type="text" placeholder="Year" value={editYear} onChange={(e) => setEditYear(e.target.value)} className="border p-2 rounded-md w-full" />
+
+                    <select
+                      value={editYear}
+                      onChange={(e) => setEditYear(e.target.value)}
+                      className="border p-2 rounded-md w-full bg-white"
+                    >
+                      <option value="">Select Year</option>
+                      <option value="1">1st Year</option>
+                      <option value="2">2nd Year</option>
+                      <option value="3">3rd Year</option>
+                      <option value="4">4th Year</option>
+                    </select>
+
                     <input type="email" placeholder="Email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="border p-2 rounded-md w-full" />
                     <input type="text" placeholder="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="border p-2 rounded-md w-full" />
                     <div className="flex gap-2 mt-2">
