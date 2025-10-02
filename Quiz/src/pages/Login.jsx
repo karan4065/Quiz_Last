@@ -18,16 +18,13 @@ const Login = () => {
       });
 
       const result = await response.json();
-console.log(result.data);
-     if (response.ok && result.success) {
-  const facultyDetails = result.data;
+      console.log(result.data);
 
-  // Save globally
-  localStorage.setItem("facultyDetails", JSON.stringify(facultyDetails));
-
-  navigate("/dashboard");
-}
-      else {
+      if (response.ok && result.success) {
+        const facultyDetails = result.data;
+        localStorage.setItem("facultyDetails", JSON.stringify(facultyDetails));
+        navigate("/dashboard");
+      } else {
         alert("Invalid Username or Password");
       }
     } catch (error) {
@@ -37,10 +34,10 @@ console.log(result.data);
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-[#4a0e23] via-[#6d1b3b] to-[#8e244d]">
+    <div className="flex flex-col h-screen bg-white">
       {/* Top Heading */}
       <header className="text-center py-6 bg-white shadow-md">
-        <h1 className="text-3xl font-bold text-[#6d1b3b]">
+        <h1 className="text-3xl font-bold text-blue-800">
           St. Vincent Pallotti College of Engineering & Technology
         </h1>
         <p className="text-gray-600 mt-1 text-lg font-medium">
@@ -48,59 +45,74 @@ console.log(result.data);
         </p>
       </header>
 
-      {/* Main Login Card */}
-      <div className="flex flex-1 items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-10">
-          <h2 className="text-2xl font-bold text-center mb-8 text-[#6d1b3b]">
-            Faculty Login
-          </h2>
+      {/* Main Content */}
+      <div className="flex flex-1 relative">
+        {/* Left: Login Form */}
+        <div className="flex-1 flex items-center justify-center p-6 md:p-10 relative z-10">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 md:p-10 relative z-10">
+            <h2 className="text-2xl font-bold text-center mb-8 text-blue-700">
+              Faculty Login
+            </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1" htmlFor="username">
-                Username
-              </label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6d1b3b]"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label
+                  className="block text-sm font-semibold text-gray-700 mb-1"
+                  htmlFor="username"
+                >
+                  Username
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full p-3 border border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your username"
+                  required
+                />
+              </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1" htmlFor="password">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6d1b3b]"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
+              <div>
+                <label
+                  className="block text-sm font-semibold text-gray-700 mb-1"
+                  htmlFor="password"
+                >
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 border border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full bg-[#6d1b3b] text-white font-semibold py-3 rounded-lg shadow-md hover:bg-[#4a0e23] transition duration-300"
-            >
-              Login
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
+              >
+                Login
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right: Image */}
+        <div className="flex-1 hidden md:flex items-center justify-center -ml-16">
+          <img
+            src="https://img.freepik.com/free-vector/access-control-system-abstract-concept_335657-3180.jpg?semt=ais_hybrid&w=740&q=80"
+            alt="Login Illustration"
+            className="object-contain h-[28rem] md:h-[34rem] w-[28rem] md:w-[34rem] rounded-xl "
+          />
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="text-center text-gray-200 py-4 text-sm bg-[#4a0e23]/90">
+      <footer className="text-center text-gray-500 py-4 text-sm bg-white border-t">
         © 2025 St. Vincent Pallotti College of Engineering & Technology | All Rights Reserved
       </footer>
     </div>
