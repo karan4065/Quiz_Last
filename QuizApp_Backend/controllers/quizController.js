@@ -186,6 +186,43 @@ export const createQuizByFaculty = async (req, res) => {
 };
 
 // ---------------- Get quiz and progress ----------------
+// export const getQuiz = async (req, res) => {
+//   const { quizId } = req.params;
+//   const studentId = req.user?._id;
+//   if (!studentId) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+//   try {
+//     const quiz = await Quiz.findById(quizId).populate("createdBy", "name");
+//     if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+
+//     let progress = await QuizProgress.findOne({ student: studentId, quiz: quizId });
+
+//     if (progress && progress.status === true) {
+//       return res.status(403).json({ success: false, message: "You have already attempted this quiz." });
+//     }
+
+//     if (!progress) {
+//       progress = await QuizProgress.create({
+//         student: studentId,
+//         quiz: quizId,
+//         currentQuestionIndex: 0,
+//         answers: [],
+//         timeLeft: quiz.duration * 60,
+//         completed: false,
+//         status: false
+//       });
+//     }
+
+//     res.json({ success: true, message: "Quiz fetched", data: { quiz, progress } });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// ---------------- Save Progress ----------------
+
+
+
 export const getQuiz = async (req, res) => {
   const { quizId } = req.params;
   const studentId = req.user?._id;
@@ -233,6 +270,25 @@ export const saveProgress = async (req, res) => {
     res.json({ success: true });
   } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
+
+// ---------------- Save Progress ----------------
+// export const saveProgress = async (req, res) => {
+//   const { currentQuestionIndex, answers, endTime } = req.body;
+//   const studentId = req.user._id;
+//   try {
+//     let progress = await QuizProgress.findOne({ quiz: req.params.quizId, student: studentId });
+//     if (!progress) progress = new QuizProgress({ quiz: req.params.quizId, student: studentId });
+
+//     progress.currentQuestionIndex = currentQuestionIndex;
+//     progress.answers = answers;
+//     progress.endTime = endTime; // <-- Save actual endTime
+//     await progress.save();
+
+//     res.json({ success: true });
+//   } catch (err) {
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// };
 
 // ---------------- Get Quiz Submissions ----------------
 export const getQuizSubmissions = async (req, res) => {
