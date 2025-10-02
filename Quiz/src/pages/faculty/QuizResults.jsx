@@ -25,6 +25,7 @@ const QuizResults = () => {
               },
             }
           );
+          console.log(res.data)
           setQuizTitle(res.data.data.quiz.title || "Untitled Quiz");
         } catch (err) {
           console.error("Failed to fetch quiz title:", err);
@@ -47,8 +48,7 @@ const QuizResults = () => {
 
         if (res.data.success) {
           let subs = res.data.data;
-
-          // Fetch department & year dynamically for each student
+ 
           subs = await Promise.all(
             subs.map(async (sub) => {
               if (!sub.studentId?.name) return sub;

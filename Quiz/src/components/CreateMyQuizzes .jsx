@@ -24,19 +24,17 @@ const CreateMyQuizzes = () => {
       navigate("/");
     }
   }, [facultyDetails, navigate]);
-
+    
   useEffect(() => {
-    if (facultyDetails?._id) {
-      fetchQuizzes(facultyDetails._id);
-    }
-  }, [facultyDetails]);
+    fetchQuizzes();
+  }, []);
 
-  const fetchQuizzes = async (facultyId) => {
+  const fetchQuizzes = async () => {
     setLoading(true);
     setError("");
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/faculty/${facultyId}/quizzes`
+        `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
       );
       const data = res.data;
       if (data.success && Array.isArray(data.data)) {
@@ -71,7 +69,7 @@ const CreateMyQuizzes = () => {
 
     try {
       const res = await axios.delete(
-        `http://localhost:5000/api/quiz/delete/${quizId}`
+        `http://localhost:5000/api/quizzes/${quizId}`
       );
       const data = res.data;
       if (data.success) {
@@ -122,7 +120,7 @@ const CreateMyQuizzes = () => {
           onProfileClick={() => navigate(-1)}
         />
         <main className="p-6">
-          <h2 className="text-3xl font-semibold mb-4 text-gray-800">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
             My Created Quizzes
           </h2>
 
@@ -163,7 +161,7 @@ const CreateMyQuizzes = () => {
           {!loading && filteredQuizzes.length > 0 && (
             <div className="overflow-x-auto bg-white shadow rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-indigo-600 text-white">
+                <thead className="bg-[#243278]   text-white">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold">
                       Quiz ID
@@ -211,7 +209,7 @@ const CreateMyQuizzes = () => {
                       <td className="px-6 py-4 flex justify-center space-x-2">
                         <button
                           onClick={() => navigate(`/quiz-results/${quiz._id}`)}
-                          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md transition"
+                          className="px-3 py-1 bg-[#243278]  hover:bg-[#2e3f98]  text-white text-sm rounded-md transition"
                         >
                           View
                         </button>

@@ -143,7 +143,7 @@ const Dashboard = ({ role: propRole }) => {
   if (error) return <div className="p-6 font-sans text-red-600">Error: {error}</div>;
 
   return (
-    <div className="flex min-h-screen font-sans bg-gray-50 text-gray-800">
+    <div className="flex min-h-screen bg-gray-50 text-gray-800">
       <div className="flex-grow">
         <Navbar userName={`Hey, ${facultyDetails.name}`} />
         <main className="p-8">
@@ -160,25 +160,25 @@ const Dashboard = ({ role: propRole }) => {
                 <div style={{ width: 100, height: 100 }}>
                   <AnimatedProgressCircle value={pendingQuizCount} displayValue={pendingQuizCount} colors={["#f97316", "#fb923c"]} />
                 </div>
-                <h3 className="font-semibold mt-4 text-orange-600">Pending Quizzes</h3>
+                <h3 className="font-semibold mt-4 text-red-600">Pending Quizzes</h3>
               </motion.div>
               <motion.div className="bg-white rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
                 <div style={{ width: 100, height: 100 }}>
                   <AnimatedProgressCircle value={quizzes.length} displayValue={quizzes.length} colors={["#3b82f6", "#60a5fa"]} />
                 </div>
-                <h3 className="font-semibold mt-4 text-blue-600">Total Quizzes</h3>
+                <h3 className="font-semibold mt-4 text-blue-800">Total Quizzes</h3>
               </motion.div>
             </div>
 
             {/* Subject & Quiz Selection */}
             <div className="mt-6 flex flex-col sm:flex-row gap-6">
-              <label className="font-medium">Select Subject:{" "}
-                <select value={selectedSubject} onChange={(e)=>setSelectedSubject(e.target.value)} className="ml-2 border border-blue-500 rounded-md px-3 py-2 bg-white text-blue-500 shadow-sm focus:ring focus:ring-blue-500">
+              <label className="font-medium ml-2">Select Subject:{" "}
+                <select value={selectedSubject} onChange={(e)=>setSelectedSubject(e.target.value)} className="ml-2 border border-[#243278]  rounded-md px-3 py-2 bg-white text-black shadow-sm ">
                   {facultyDetails.subjects.map((subj, idx)=><option key={idx} value={subj}>{subj}</option>)}
                 </select>
               </label>
               <label className="font-medium">Select Quiz:{" "}
-                <select value={selectedQuizId} onChange={(e)=>setSelectedQuizId(e.target.value)} className="ml-2 border border-blue-500 rounded-md px-3 py-2 bg-white text-blue-500 shadow-sm focus:ring focus:ring-blue-500">
+                <select value={selectedQuizId} onChange={(e)=>setSelectedQuizId(e.target.value)} className="ml-2 border border-[#243278]  rounded-md px-3 py-2 bg-white text-black shadow-sm ">
                   {subjectQuizzes.map((quiz)=><option key={quiz._id} value={quiz._id}>{quiz.title}</option>)}
                 </select>
               </label>
@@ -188,12 +188,12 @@ const Dashboard = ({ role: propRole }) => {
             {selectedQuiz && (
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <motion.div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                  <h3 className="font-semibold mb-4 text-lg text-blue-600">{selectedQuiz.title} - Completion Status</h3>
-                  <Plot data={[{ values:[completedStudents, remainingStudents], labels:["Completed","Remaining"], type:"pie", marker:{colors:["#16a34a","#f97316"], line:{color:"#fff", width:2}}, textinfo:"label+value", hole:0.4 }]} layout={{paper_bgcolor:"white", plot_bgcolor:"white", font:{color:"#1e3a8a", size:14}, height:320, width:320}} config={{displayModeBar:false}}/>
+                  <h3 className="font-semibold mb-4 text-lg text-blue-800">{selectedQuiz.title} - Completion Status</h3>
+                  <Plot data={[{ values:[completedStudents, remainingStudents], labels:["Completed","Remaining"], type:"pie", marker:{colors:["#16a34a","#dc2626"], line:{color:"#fff", width:2}}, textinfo:"label+value", hole:0.4 }]} layout={{paper_bgcolor:"white", plot_bgcolor:"white", font:{color:"#1e3a8a", size:14}, height:320, width:320}} config={{displayModeBar:false}}/>
                 </motion.div>
                 <div className="flex flex-col gap-6">
                   <div className="bg-white rounded-xl p-6 shadow-lg text-center"><h3 className="font-semibold mb-2 text-green-600">Completed</h3><p className="text-3xl font-bold"><AnimatedNumber value={completedStudents}/></p></div>
-                  <div className="bg-white rounded-xl p-6 shadow-lg text-center"><h3 className="font-semibold mb-2 text-orange-600">Remaining</h3><p className="text-3xl font-bold"><AnimatedNumber value={remainingStudents}/></p></div>
+                  <div className="bg-white rounded-xl p-6 shadow-lg text-center"><h3 className="font-semibold mb-2 text-red-600">Remaining</h3><p className="text-3xl font-bold"><AnimatedNumber value={remainingStudents}/></p></div>
                 </div>
               </div>
             )}
@@ -201,7 +201,7 @@ const Dashboard = ({ role: propRole }) => {
           {/* Bar Graph for All Quizzes */}
               {quizzes.length > 0 && (
                 <div className="mt-10 bg-white p-6 rounded-xl shadow-lg">
-                  <h3 className="font-semibold mb-6 text-lg text-blue-600">
+                  <h3 className="font-semibold mb-6 text-lg text-blue-800">
                     All Quizzes Completion Status
                   </h3>
                   <Plot
@@ -234,10 +234,11 @@ const Dashboard = ({ role: propRole }) => {
                     layout={{
                       barmode: "group",
                       height: 450,
+                      width:550,
                       paper_bgcolor: "white",
                       plot_bgcolor: "white",
                       font: { color: "#1e3a8a", size: 14 },
-                      margin: { t: 30, b: 120 },
+                      margin: { t: 10, b: 40 },
                       yaxis: {
                         title: "Students",
                         range: [0, Math.max(...quizzes.map((q) => q.limit || 70))],

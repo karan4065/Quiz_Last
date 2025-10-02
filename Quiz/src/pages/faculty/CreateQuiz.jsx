@@ -287,7 +287,7 @@ const CreateQuiz = () => {
     <div className="p-6 bg-gray-100 min-h-screen">
       <Navbar userName={`Hey, ${facultyDetails.name}`} />
 
-      <h2 className="text-3xl font-semibold mb-6 mt-6 text-gray-800">Manage Quizzes</h2>
+      <h2 className="text-2xl font-semibold mb-6 mt-6 text-gray-800">Manage Quizzes</h2>
 
       {/* Create / Upload Form */}
       <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
@@ -305,14 +305,14 @@ const CreateQuiz = () => {
                 type="number"
                 placeholder="Duration (minutes)"
                 value={quizDuration}
-                onChange={(e) => setQuizDuration(Number(e.target.value))}
+                onChange={(e) => setQuizDuration(e.target.value)}
                 className="border border-gray-300 p-3 rounded-md focus:ring-2 focus:ring-indigo-400"
               />
               <input
                 type="number"
-                placeholder="Limit (questions)"
+                placeholder="Limit (Student Limit)"
                 value={quizLimit}
-                onChange={(e) => setQuizLimit(Number(e.target.value))}
+                onChange={(e) => setQuizLimit(e.target.value)}
                 className="border border-gray-300 p-3 rounded-md focus:ring-2 focus:ring-indigo-400"
               />
             </div>
@@ -343,16 +343,16 @@ const CreateQuiz = () => {
                 type="file"
                 accept=".csv"
                 onChange={(e) => setQuizFile(e.target.files[0])}
-                className="block w-full text-sm text-gray-600
+                className="block w-full border border-[#243278] rounded-md text-sm text-gray-600
                   file:mr-4 file:py-2 file:px-4
-                  file:rounded-md file:border-0
+                    file:border-0
                   file:text-sm file:font-semibold
-                  file:bg-indigo-600 file:text-white
-                  hover:file:bg-indigo-700"
+                  file:bg-[#243278]   file:text-white
+                  hover:file:bg-[#162675]  "
               />
               <button
                 onClick={handleQuizUpload}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-md transition"
+                className="w-full bg-[#243278]   hover:bg-[#202c6b]   text-white font-medium py-3 rounded-md transition"
               >
                 Upload via CSV
               </button>
@@ -363,7 +363,7 @@ const CreateQuiz = () => {
                   setIsNewQuiz(true);
                   setShowImageForm(true);
                 }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-md transition"
+                className="w-full bg-[#17ce54]    hover:bg-[#1b9e47]   text-white font-medium py-3 rounded-md transition"
               >
                 Create Image-based Quiz
               </button>
@@ -430,7 +430,7 @@ const CreateQuiz = () => {
                   </td>
                   <td className="px-4 py-3 flex space-x-2">
                     <button
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md transition"
+                      className="bg-[#243278]  hover:bg-[#3a51c5]   text-white px-3 py-1 rounded-md transition"
                       onClick={() => {
                         setCurrentQuizId(q._id);
                         setIsNewQuiz(false);

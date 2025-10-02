@@ -249,7 +249,7 @@ export const getQuiz = async (req, res) => {
         status: false
       });
     }
-
+    console.log(progress)
     res.json({ success: true, message: "Quiz fetched", data: { quiz, progress } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

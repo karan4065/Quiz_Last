@@ -16,14 +16,13 @@ connectDB();
 export const getFacultyQuizzes = async (req, res) => {
   try {
     const { facultyId } = req.params;
-   
-    console.log(facultyId) // optional query param
-    if (!facultyId) return res.status(400).json({ success: false, message: "Faculty ID required" });
 
-    let filter = { createdBy: facultyId };
-  // only quizzes for that subject
+    if (!facultyId) {
+      return res.status(400).json({ success: false, message: "Faculty ID required" });
+    }
 
-    const quizzes = await Quiz.find(filter).sort({ createdAt: -1 });
+    const quizzes = await Quiz.find({ createdBy: facultyId }).sort({ createdAt: -1 });
+
     res.json({ success: true, data: quizzes });
   } catch (err) {
     console.error(err);
