@@ -1,29 +1,23 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import logo from "../assets/logo.png";
 import {
-  FaQuestionCircle,
-  FaMedal,
-  FaTrophy,
-  FaMobileAlt,
   FaRocket,
   FaCalculator,
   FaAtom,
   FaCode,
-  FaNetworkWired,
-  FaPenFancy,
   FaStream,
   FaMicrochip,
+  FaNetworkWired,
   FaDatabase,
   FaShieldAlt,
   FaLaptopCode,
   FaCloud,
   FaRobot,
- 
- 
+  FaPenFancy,
 } from "react-icons/fa";
-
 
 const categories = [
   { name: "Computer Science", icon: <FaRocket size={30} /> },
@@ -41,33 +35,36 @@ const categories = [
   { name: "Exams & Aptitude", icon: <FaPenFancy size={30} /> },
 ];
 
-
 const Home = () => {
   const navigate = useNavigate();
 
   return (
     <div className="w-full min-h-screen font-sans bg-white text-gray-800">
       {/* Navigation */}
-      <nav className="fixed w-full z-30 bg-white backdrop-blur-md text-black px-6 py-4 shadow-lg flex items-center justify-between">
+      <nav className="fixed w-full z-30 bg-white backdrop-blur-md text-black px-6 py-4 shadow-lg flex items-center justify-between transition-all">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Logo" className="h-10 w-10 rounded bg-white" />
+          <img src={logo} alt="Logo" className="h-10 w-10 rounded bg-white shadow-md" />
           <span className="text-lg font-semibold">
             St. Vincent Pallotti College of Engineering and Technology, Nagpur
           </span>
         </div>
         <div className="flex gap-4">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/student-login")}
             className="bg-teal-600 px-4 py-2 rounded text-white hover:bg-teal-500 transition"
           >
             Student Quiz
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/faculty-login")}
-            className="bg-blue-700 text-white px-4 py-2 rounded hover:text-black transition"
+            className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
           >
             Faculty Login
-          </button>
+          </motion.button>
         </div>
       </nav>
 
@@ -78,38 +75,53 @@ const Home = () => {
           background: "linear-gradient(to bottom right, #4B0082, #000066)",
         }}
       >
-        <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-4xl md:text-5xl font-bold leading-tight mb-4"
+        >
           Ready to test your skills?
           <br />
           <span className="text-teal-300">Play, Compete, and Win Big!</span>
-        </h1>
-        <p className="text-lg md:text-xl max-w-3xl mb-8">
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          className="text-lg md:text-xl max-w-3xl mb-8"
+        >
           Jump into exciting quizzes across categories. Challenge friends, earn achievements, and climb the leaderboard!
-        </p>
-        <button
+        </motion.p>
+        <motion.button
+          whileHover={{ scale: 1.05, backgroundColor: "#14B8A6" }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => navigate("/student-login")}
-          className="bg-teal-500 px-6 py-3 text-lg font-semibold rounded-full hover:bg-teal-400 transition"
+          className="bg-teal-500 px-6 py-3 text-lg font-semibold rounded-full transition"
         >
           Start Your First Quiz
-        </button>
+        </motion.button>
       </section>
 
-      {/* Categories */}
+      {/* Categories Section */}
       <section className="bg-gray-100 py-12">
         <h2 className="text-3xl font-bold text-center mb-10">Popular Categories</h2>
         <div className="flex flex-wrap justify-center gap-6 px-4">
           {categories.map((cat, idx) => (
-            <div
+            <motion.div
               key={idx}
-              className="flex flex-col items-center bg-white p-6 rounded-lg shadow hover:shadow-lg transition min-w-[120px]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(0,0,0,0.2)" }}
+              className="flex flex-col items-center bg-white p-6 rounded-lg shadow cursor-pointer min-w-[120px] transition"
             >
               <div className="mb-2 text-teal-500">{cat.icon}</div>
               <span className="text-md font-medium">{cat.name}</span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
-
 
       {/* Footer */}
       <footer className="bg-blue-900 text-gray-300 py-6 px-8 flex flex-col md:flex-row justify-between items-center">
@@ -118,9 +130,9 @@ const Home = () => {
           <p>© 2025 QuizMaster. All rights reserved.</p>
         </div>
         <div className="flex gap-4">
-          <a href="https://facebook.com/" className="hover:text-white">Facebook</a>
-          <a href="https://twitter.com/" className="hover:text-white">Twitter</a>
-          <a href="https://instagram.com/" className="hover:text-white">Instagram</a>
+          <a href="https://facebook.com/" className="hover:text-white transition">Facebook</a>
+          <a href="https://twitter.com/" className="hover:text-white transition">Twitter</a>
+          <a href="https://instagram.com/" className="hover:text-white transition">Instagram</a>
         </div>
       </footer>
     </div>

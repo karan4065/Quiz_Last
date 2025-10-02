@@ -1,20 +1,16 @@
-import React, { useState } from "react";
+import React, { useContext } from "react";
 import Sidebar from "../components/Sidebar";
+import { AuthContext } from "../components/AuthContext";
 
-const DashboardLayout = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Replace with your auth logic
+const DashboardLayout = ({ children }) => {
+  const { facultyDetails, isLoggedIn } = useContext(AuthContext);
 
-  const handleLogout = () => {
-    // Clear auth tokens or context here
-    setIsLoggedIn(false);
-  };
-
+  // Render immediately, Sidebar and Dashboard together
   return (
-    <div style={{ display: "flex" }}>
-      <Sidebar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
+    <div className="flex min-h-screen">
+      <Sidebar />
       <main style={{ flexGrow: 1, padding: "20px" }}>
-        {/* Your main dashboard content */}
-        <h1>Dashboard Content</h1>
+        {children}
       </main>
     </div>
   );
