@@ -198,49 +198,61 @@ const Dashboard = ({ role: propRole }) => {
               </div>
             )}
 
-            {/* Bar Graph with Animated Bars */}
-            {quizzes.length > 0 && (
-              <div className="mt-10 bg-white p-6 rounded-xl shadow-lg">
-                <h3 className="font-semibold mb-6 text-lg text-blue-600">All Quizzes Completion Status</h3>
-                <Plot
-                  data={[
-                    {
-                      x: quizzes.map(q=>`${q.subject} - ${q.title}`),
-                      y: quizzes.map(q=>0),
-                      name:"Completed",
-                      type:"bar",
-                      marker:{color:quizzes.map((_,i)=>`rgba(${22+i*5},163,74,0.8)`)}
-                    },
-                    {
-                      x: quizzes.map(q=>`${q.subject} - ${q.title}`),
-                      y: quizzes.map(q=>0),
-                      name:"Remaining",
-                      type:"bar",
-                      marker:{color:quizzes.map((_,i)=>`rgba(${249+i*2},115,22,0.8)`)}
-                    }
-                  ]}
-                  layout={{
-                    barmode:"group",
-                    height:450,
-                    paper_bgcolor:"white",
-                    plot_bgcolor:"white",
-                    font:{color:"#1e3a8a", size:14},
-                    margin:{t:30, b:120},
-                    yaxis:{title:"Students", range:[0, Math.max(...quizzes.map(q=>q.limit||70))], gridcolor:"#e5e7eb"},
-                    xaxis:{tickangle:-30, automargin:true},
-                    legend:{orientation:"h", y:-0.3},
-                    transition:{duration:1000, easing:"cubic-in-out"}
-                  }}
-                  config={{displayModeBar:false}}
-                  onInitialized={(figure) => {
-                    // Animate bars from 0 -> value
-                    const update = {y: [quizzes.map(q=>q.completed?.length||0), quizzes.map(q=>(q.limit||70)-(q.completed?.length||0))]};
-                    setTimeout(()=>{Plotly.animate('plot', update, {transition:{duration:1200, easing:'cubic-in-out'}})}, 100);
-                  }}
-                  divId="plot"
-                />
-              </div>
-            )}
+          {/* Bar Graph for All Quizzes */}
+              {quizzes.length > 0 && (
+                <div className="mt-10 bg-white p-6 rounded-xl shadow-lg">
+                  <h3 className="font-semibold mb-6 text-lg text-blue-600">
+                    All Quizzes Completion Status
+                  </h3>
+                  <Plot
+                    data={[
+                      {
+                        x: quizzes.map((q) => `${q.subject} - ${q.title}`),
+                        y: quizzes.map((q) => q.completed?.length || 0),
+                        name: "Completed",
+                        type: "bar",
+                        marker: {
+                          color: quizzes.map(
+                            (_, idx) => `rgba(${22 + idx * 5},163,74,0.8)`
+                          )
+                        }
+                      },
+                      {
+                        x: quizzes.map((q) => `${q.subject} - ${q.title}`),
+                        y: quizzes.map(
+                          (q) => (q.limit || 70) - (q.completed?.length || 0)
+                        ),
+                        name: "Remaining",
+                        type: "bar",
+                        marker: {
+                          color: quizzes.map(
+                            (_, idx) => `rgba(${249 + idx * 2},115,22,0.8)`
+                          )
+                        }
+                      }
+                    ]}
+                    layout={{
+                      barmode: "group",
+                      height: 450,
+                      paper_bgcolor: "white",
+                      plot_bgcolor: "white",
+                      font: { color: "#1e3a8a", size: 14 },
+                      margin: { t: 30, b: 120 },
+                      yaxis: {
+                        title: "Students",
+                        range: [0, Math.max(...quizzes.map((q) => q.limit || 70))],
+                        gridcolor: "#e5e7eb"
+                      },
+                      xaxis: {
+                        tickangle: -30,
+                        automargin: true
+                      },
+                      legend: { orientation: "h", y: -0.3 }
+                    }}
+                    config={{ displayModeBar: false }}
+                  />
+                </div>
+              )}
           </div>
         </main>
       </div>
