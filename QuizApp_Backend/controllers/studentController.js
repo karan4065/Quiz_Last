@@ -137,13 +137,70 @@ export const loginStudent = async (req, res) => {
   }
 };
 
+export const resultLoginStudent = async (req, res) => {
+  const { uid, password } = req.body;
+console.log(req.body)
+  if (!uid || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "UID and password are required",
+    });
+  }
+
+  try {
+    // Find student
+    const student = await Student.findOne({ studentId: uid });
+    if (!student) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid UID or password" });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, student.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid UID or password" });
+    }
+
+    // Generate token
+    const token = generateToken(student);
+
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      sameSite: "lax",
+    });
+
+    // ✅ Only send back student details (no quiz check here)
+    res.status(200).json({
+      success: true,
+      message: "Student logged in successfully for result view",
+      data: student,
+    });
+  } catch (error) {
+    console.error("Result Login error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+import nodemailer from 'nodemailer'
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+
+    // Check if student exists
     const student = await Student.findOne({ email });
     if (!student) return res.status(400).json({ message: "Email not registered" });
 
-    const token = crypto.randomBytes(20).toString("hex");
+    // Generate 6-digit numeric OTP
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save token and expiry to student
     student.resetPasswordToken = token;
     student.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 mins
     await student.save();
@@ -153,30 +210,32 @@ export const forgotPassword = async (req, res) => {
       service: "gmail",
       auth: {
         user: "bharbatdivyansh1@gmail.com",
-        pass: "uejuxvsnsyvotsgg",
+        pass: "uejuxvsnsyvotsgg", // app password
       },
     });
 
+    // Send email with OTP
     await transporter.sendMail({
       from: "bharbatdivyansh1@gmail.com",
       to: email,
-      subject: "Password Reset",
-      text:`Your reset token is: ${token} (valid for 15 mins)`,
+      subject: "Password Reset OTP",
+      text: `Your password reset OTP is: ${token} (valid for 15 minutes)`,
     });
 
-    res.json({ message: "Reset token sent to email" });
+    // Respond with success
+    res.json({ message: "OTP sent to email", token }); // token can be used for frontend navigation
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-
-// Reset Password
+// ---------------- Reset Password ----------------
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
 
+    // Find student with valid token
     const student = await Student.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() }, // token not expired
@@ -186,10 +245,11 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
+    // Hash new password
     const salt = await bcrypt.genSalt(10);
     student.password = await bcrypt.hash(password, salt);
 
-    // remove token after successful reset
+    // Remove token after successful reset
     student.resetPasswordToken = undefined;
     student.resetPasswordExpires = undefined;
 
@@ -199,7 +259,7 @@ export const resetPassword = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
- }
+  }
 };
 
 

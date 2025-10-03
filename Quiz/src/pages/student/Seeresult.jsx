@@ -2,10 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const StudentLogin = () => {
+const Seeresult = () => {
   const [uid, setUid] = useState("");
   const [password, setPassword] = useState("");
-  const [quizId, setQuizId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -17,14 +16,15 @@ const StudentLogin = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/student/login",
-        { uid, password, quizId },
+        "http://localhost:5000/api/student/resultlogin",
+        { uid, password },
         { withCredentials: true }
       );
 
       if (response.data.success) {
         localStorage.setItem("studentDetails", JSON.stringify(response.data.data));
-        navigate(`/quiz/${response.data.data.quizId}`);
+        // Redirect to student's result page
+        navigate(`/result/${response.data.data.uid}`);
       } else {
         setError(response.data.message);
       }
@@ -42,7 +42,7 @@ const StudentLogin = () => {
         <h1 className="text-3xl font-bold text-blue-800">
           St. Vincent Pallotti College of Engineering & Technology
         </h1>
-        <p className="text-gray-600 mt-1 text-lg font-medium">Student Quiz Login Portal</p>
+        <p className="text-gray-600 mt-1 text-lg font-medium">Student Result Portal</p>
       </header>
 
       {/* Main Content */}
@@ -55,7 +55,6 @@ const StudentLogin = () => {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* UID */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   UID
@@ -70,7 +69,6 @@ const StudentLogin = () => {
                 />
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   Password
@@ -85,36 +83,8 @@ const StudentLogin = () => {
                 />
               </div>
 
-              {/* Quiz ID */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Quiz ID
-                </label>
-                <input
-                  type="text"
-                  value={quizId}
-                  onChange={(e) => setQuizId(e.target.value)}
-                  className="w-full p-3 border border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter Quiz ID"
-                  required
-                />
-              </div>
-
-              {/* Forgot Password Link */}
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => navigate("/forgot-password")}
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-
-              {/* Error Message */}
               {error && <p className="text-red-600 mt-2 text-center">{error}</p>}
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 className="w-full bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
@@ -126,7 +96,7 @@ const StudentLogin = () => {
           </div>
         </div>
 
-        {/* Right: Illustration */}
+        {/* Right: Image */}
         <div className="flex-1 hidden md:flex items-center justify-center -ml-16">
           <img
             src="https://img.freepik.com/free-vector/access-control-system-abstract-concept_335657-3180.jpg?semt=ais_hybrid&w=740&q=80"
@@ -144,4 +114,4 @@ const StudentLogin = () => {
   );
 };
 
-export default StudentLogin;
+export default Seeresult;

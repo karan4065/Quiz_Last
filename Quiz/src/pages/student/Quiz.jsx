@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
 
+// Option Button
 const OptionButton = ({ option, isSelected, onClick, disabled }) => (
   <button
     onClick={() => !disabled && onClick(option)}
@@ -18,6 +19,7 @@ const OptionButton = ({ option, isSelected, onClick, disabled }) => (
   </button>
 );
 
+// Question Component
 const QuestionComponent = ({ question, selectedOption, onOptionSelect }) => (
   <div className="bg-white p-6 rounded-xl shadow-lg mb-6 select-none transition duration-300 hover:shadow-2xl">
     <h2 className="text-2xl font-semibold mb-4">
@@ -50,6 +52,7 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect }) => (
   </div>
 );
 
+// Navigation Buttons
 const NavigationButtons = ({
   currentIndex,
   totalQuestions,
@@ -91,6 +94,7 @@ const NavigationButtons = ({
   </div>
 );
 
+// Timer Bar
 const TimerBar = ({ timeLeft, totalTime }) => {
   const percentage = (timeLeft / totalTime) * 100;
   const bgColor =
@@ -124,65 +128,82 @@ const Quiz = () => {
 
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const autoSaveRef = useRef(null);
 
-  // Prevent copy, right click, drag, select
+  // Disable copy, right-click, drag, select, keys (F12, Ctrl+U, etc.)
   useEffect(() => {
     const prevent = (e) => e.preventDefault();
     const keyListener = (e) => {
+      const forbiddenKeys = ["F12"];
+      const forbiddenCtrl = ["U", "I", "J", "C"];
       if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) ||
-        (e.ctrlKey && e.key.toUpperCase() === "U")
+        forbiddenKeys.includes(e.key) ||
+        (e.ctrlKey && forbiddenCtrl.includes(e.key.toUpperCase()))
       )
         e.preventDefault();
     };
-    document.addEventListener("copy", prevent);
-    document.addEventListener("contextmenu", prevent);
-    document.addEventListener("dragstart", prevent);
-    document.addEventListener("selectstart", prevent);
+    ["copy", "contextmenu", "dragstart", "selectstart"].forEach((evt) =>
+      document.addEventListener(evt, prevent)
+    );
     document.addEventListener("keydown", keyListener);
     return () => {
-      document.removeEventListener("copy", prevent);
-      document.removeEventListener("contextmenu", prevent);
-      document.removeEventListener("dragstart", prevent);
-      document.removeEventListener("selectstart", prevent);
+      ["copy", "contextmenu", "dragstart", "selectstart"].forEach((evt) =>
+        document.removeEventListener(evt, prevent)
+      );
       document.removeEventListener("keydown", keyListener);
     };
   }, []);
 
-  // Freeze quiz on tab change
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && !quizCompleted && !quizFrozen) {
-        setQuizFrozen(true);
-        handleSubmit();
-        alert("Tab change detected! Quiz is frozen and submitted.");
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [quizCompleted, quizFrozen]);
+  // Freeze on tab switch
+ // Freeze on tab switch or window blur
+useEffect(() => {
+  const handleFreeze = () => {
+    if (!quizCompleted) {
+      setQuizFrozen(true);
+      handleSubmit();
+      alert("Window lost focus! Quiz submitted.");
+    }
+  };
 
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === "PrintScreen") {
-        alert("Screen capture detected! Not allowed during quiz.");
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  const handleVisibility = () => {
+    if (document.visibilityState === "hidden") handleFreeze();
+  };
 
+  window.addEventListener("blur", handleFreeze); // triggers on minimize
+  document.addEventListener("visibilitychange", handleVisibility);
+
+  return () => {
+    window.removeEventListener("blur", handleFreeze);
+    document.removeEventListener("visibilitychange", handleVisibility);
+  };
+}, [quizCompleted]);
+useEffect(() => {
+  const handleEsc = (e) => {
+    if (e.key === "Escape" && !quizCompleted) {
+      setQuizFrozen(true);
+      handleSubmit();
+      alert("Fullscreen exited! Quiz submitted.");
+    }
+  };
+  window.addEventListener("keydown", handleEsc);
+  return () => window.removeEventListener("keydown", handleEsc);
+}, [quizCompleted]);
+
+  // Load student & quiz
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/student/me", { withCredentials: true });
+        const { data } = await axios.get("http://localhost:5000/api/student/me", {
+          withCredentials: true,
+        });
         if (data.success) setStudent(data.student);
       } catch {
         handleLogout();
       }
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/quizzes/${quizId}`, { withCredentials: true });
+        const { data } = await axios.get(`http://localhost:5000/api/quizzes/${quizId}`, {
+          withCredentials: true,
+        });
         if (!data.success) {
           navigate("/already-attempted");
           return;
@@ -203,12 +224,14 @@ const Quiz = () => {
     loadData();
   }, [quizId]);
 
+  // Flatten questions
   useEffect(() => {
     if (categories.length > 0 && progressLoaded) {
       setQuestions(categories.flatMap((c) => c.questions));
     }
   }, [categories, progressLoaded]);
 
+  // Starting countdown
   useEffect(() => {
     if (!progressLoaded || questions.length === 0) return;
     if (startingCountdown > 0) {
@@ -218,6 +241,43 @@ const Quiz = () => {
       setShowStartingLoader(false);
     }
   }, [startingCountdown, progressLoaded, questions.length]);
+
+  // Auto-save every 10s
+  useEffect(() => {
+    autoSaveRef.current = setInterval(() => {
+      saveProgress();
+    }, 10000);
+    return () => clearInterval(autoSaveRef.current);
+  }, [answers, currentQuestionIndex, timeLeft]);
+
+  // Timer
+  useEffect(() => {
+    if (!quizCompleted && !quizFrozen && timeLeft > 0) {
+      const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+      return () => clearInterval(timer);
+    } else if (timeLeft === 0 && !quizCompleted) {
+      setQuizFrozen(true);
+      handleSubmit();
+    }
+  }, [timeLeft, quizCompleted, quizFrozen]);
+
+  // Selected option
+  useEffect(() => {
+    const currQ = questions[currentQuestionIndex];
+    const ans = answers.find((a) => a.questionId === currQ?._id);
+    setSelectedOption(ans?.selectedOption || null);
+  }, [currentQuestionIndex, questions, answers]);
+
+  const handleOptionClick = (option) => {
+    if (quizFrozen || quizCompleted) return;
+    const qId = questions[currentQuestionIndex]?._id;
+    const updatedAnswers = [...answers];
+    const idx = updatedAnswers.findIndex((a) => a.questionId === qId);
+    if (idx !== -1) updatedAnswers[idx].selectedOption = option;
+    else updatedAnswers.push({ questionId: qId, selectedOption: option });
+    setAnswers(updatedAnswers);
+    setSelectedOption(option);
+  };
 
   const saveProgress = async () => {
     if (quizCompleted || quizFrozen || !progressLoaded) return;
@@ -231,37 +291,6 @@ const Quiz = () => {
       console.error("Save progress error:", e);
     }
   };
-
-  useEffect(() => {
-    saveProgress();
-  }, [answers, currentQuestionIndex, timeLeft]);
-
-  useEffect(() => {
-    if (!quizCompleted && !quizFrozen && timeLeft > 0) {
-      const interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-      return () => clearInterval(interval);
-    } else if (timeLeft === 0 && !quizCompleted) {
-      setQuizFrozen(true);
-      handleSubmit();
-    }
-  }, [timeLeft, quizCompleted, quizFrozen]);
-
-  const handleOptionClick = (option) => {
-    if (quizFrozen || quizCompleted) return;
-    const qId = questions[currentQuestionIndex]?._id;
-    const updatedAnswers = [...answers];
-    const idx = updatedAnswers.findIndex((a) => a.questionId === qId);
-    if (idx !== -1) updatedAnswers[idx].selectedOption = option;
-    else updatedAnswers.push({ questionId: qId, selectedOption: option });
-    setAnswers(updatedAnswers);
-    setSelectedOption(option);
-  };
-
-  useEffect(() => {
-    const currQ = questions[currentQuestionIndex];
-    const ans = answers.find((a) => a.questionId === currQ?._id);
-    setSelectedOption(ans?.selectedOption || null);
-  }, [currentQuestionIndex, questions, answers]);
 
   const handleSubmit = async () => {
     if (quizCompleted) return;
@@ -284,15 +313,9 @@ const Quiz = () => {
   const enterFullscreen = () => {
     const elem = document.documentElement;
     if (elem.requestFullscreen) elem.requestFullscreen();
-    else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
-    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
   };
   const exitFullscreen = () => {
     if (document.exitFullscreen) document.exitFullscreen();
-    else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    else if (document.msExitFullscreen) document.msExitFullscreen();
   };
 
   const toggleSidebar = () => setSidebarOpen((s) => !s);
@@ -323,7 +346,7 @@ const Quiz = () => {
         <>
           <aside className="h-screen w-1/5 bg-gradient-to-b from-blue-900 to-blue-700 text-white p-6 shadow-xl flex flex-col justify-between fixed top-0 left-0 z-50 select-none">
             <div>
-              <h2 className="text-xl font-bold mb-6 border-b pb-2 border-gray-400">Student Profile</h2>
+              <h2 className="text-xl font-bold mb-6 border-b pb-2 border-gray-400">Profile</h2>
               <div className="space-y-3 text-sm bg-blue-800/80 p-4 rounded-xl shadow-inner">
                 <div><span className="font-semibold">Name:</span> {student?.name}</div>
                 <div><span className="font-semibold">ID:</span> {student?.studentId}</div>
@@ -378,7 +401,7 @@ const Quiz = () => {
         </div>
 
         <aside className="hidden md:block w-1/4 bg-white p-4 shadow-md rounded-lg ml-6">
-          <h2 className="font-bold text-lg mb-4 border-b pb-2 text-center">Question Navigation</h2>
+          <h2 className="font-bold text-lg mb-4 border-b pb-2 text-center">Navigation</h2>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-3">
             {questions.map((_, i) => (
               <button

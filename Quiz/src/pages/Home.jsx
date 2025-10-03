@@ -65,6 +65,15 @@ const Home = () => {
           >
             Faculty Login
           </motion.button>
+          {/* NEW: My Result Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/seeresult")}
+            className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-600 transition"
+          >
+            My Result
+          </motion.button>
         </div>
       </nav>
 

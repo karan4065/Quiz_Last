@@ -4,16 +4,28 @@ import { useNavigate } from "react-router-dom";
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [session, setSession] = useState(""); // New state
+  const [semester, setSemester] = useState("odd"); // Default to "odd"
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!session.trim()) {
+      alert("Please enter session (e.g., 2025-26)");
+      return;
+    }
+
+    if (!["even", "odd"].includes(semester)) {
+      alert("Semester must be either 'even' or 'odd'");
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:5000/api/faculty/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: username, password }),
+        body: JSON.stringify({ email: username, password, session, semester }),
         credentials: "include",
       });
 
@@ -25,7 +37,7 @@ const Login = () => {
         localStorage.setItem("facultyDetails", JSON.stringify(facultyDetails));
         navigate("/dashboard");
       } else {
-        alert("Invalid Username or Password");
+        alert(result.message || "Invalid Username or Password for this session/semester");
       }
     } catch (error) {
       console.error("An error occurred:", error);
@@ -89,6 +101,43 @@ const Login = () => {
                   placeholder="Enter your password"
                   required
                 />
+              </div>
+
+              <div>
+                <label
+                  className="block text-sm font-semibold text-gray-700 mb-1"
+                  htmlFor="session"
+                >
+                  Session
+                </label>
+                <input
+                  type="text"
+                  id="session"
+                  value={session}
+                  onChange={(e) => setSession(e.target.value)}
+                  className="w-full p-3 border border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter session (e.g., 2025-26)"
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  className="block text-sm font-semibold text-gray-700 mb-1"
+                  htmlFor="semester"
+                >
+                  Semester
+                </label>
+                <select
+                  id="semester"
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  className="w-full p-3 border border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="odd">Odd</option>
+                  <option value="even">Even</option>
+                </select>
               </div>
 
               <button

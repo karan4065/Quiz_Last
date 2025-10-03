@@ -11,7 +11,9 @@ import {
   getStudentQuizzes,
   getQuizResult,
   getStudentSubmissions,
-  getStudentByName
+  getStudentByName,
+  resultLoginStudent,
+  forgotPassword,resetPassword
 } from '../controllers/studentController.js';
 
 import { protect } from '../middlewares/authMiddleware.js'; // protect routes if needed
@@ -22,7 +24,9 @@ const router = express.Router();
 // Student registration and login
 router.post('/register', registerStudent);
 router.post('/login', loginStudent);
-
+router.post('/resultlogin', resultLoginStudent);
+router.post('/forgot-password', forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 // Student profile & info routes
 router.get('/me', protect, getStudentMe);
 router.get('/studentId/:studentId', getStudentByStudentID);
