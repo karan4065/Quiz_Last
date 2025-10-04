@@ -624,3 +624,31 @@ export const deleteQuiz = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+
+export const getQuizTitleById = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+
+    const quiz = await Quiz.findById(quizId).select("title");
+
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: "Quiz not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { quiz },
+    });
+  } catch (error) {
+    console.error("Error fetching quiz title:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching quiz title",
+    });
+  }
+};

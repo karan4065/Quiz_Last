@@ -199,10 +199,14 @@ const CreateMyQuizzes = () => {
                         {quiz.session || "N/A"}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {Array.isArray(quiz.questions)
-                          ? quiz.questions.length
-                          : 0}
-                      </td>
+                      {Array.isArray(quiz.categories)
+                        ? quiz.categories.reduce(
+                            (total, cat) => total + (cat.questions?.length || 0),
+                            0
+                          )
+                        : 0}
+                    </td>
+
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {new Date(quiz.createdAt).toLocaleString()}
                       </td>

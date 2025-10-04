@@ -72,9 +72,10 @@ const CreateQuiz = () => {
   const fetchQuizzes = async () => {
     if (!facultyDetails?._id) return;
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
-      );
+     const res = await axios.get(
+  `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
+);
+
       if (res.data.success) {
         setQuizzes(res.data.data || []);
       }
@@ -192,16 +193,17 @@ const CreateQuiz = () => {
     formData.append("category", category);
     formData.append("description", description || "");
     formData.append("options", JSON.stringify([optionA, optionB, optionC, optionD]));
-    formData.append("answer", imageQuestion[`option${correctOption}`]);
+   formData.append("answer", imageQuestion[`option${correctOption}`]);
     formData.append("subject", quiz.subject);
     if (image) formData.append("image", image);
 
     try {
-      const res = await axios.post(
-        `http://localhost:5000/api/quizzes/${currentQuizId}/addqs`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+     const res = await axios.post(
+  `http://localhost:5000/api/quizzes/${currentQuizId}/addqs`,
+  formData,
+  { headers: { "Content-Type": "multipart/form-data" } }
+);
+
       if (res.data.success) {
         alert("Question added successfully!");
         resetImageForm();
@@ -248,9 +250,10 @@ const CreateQuiz = () => {
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className=" bg-gray-100 min-h-screen">
       <Toaster/>
       <Navbar userName={`Hey, ${facultyDetails.name}`} />
+
 
       <h2 className="text-2xl font-semibold mb-6 mt-6 text-gray-800">Manage Quizzes</h2>
 
@@ -510,22 +513,23 @@ const CreateQuiz = () => {
             />
 
             <div className="grid grid-cols-2 gap-3">
-              {["A", "B", "C", "D"].map((opt) => (
-                <input
-                  key={opt}
-                  type="text"
-                  placeholder={`Option ${opt}`}
-                  value={imageQuestion[`option${opt}`]}
-                  onChange={(e) =>
-                    setImageQuestion({
-                      ...imageQuestion,
-                      [`option${opt}`]: e.target.value,
-                    })
-                  }
-                  className="border border-gray-300 p-3 rounded-md focus:ring-2 focus:ring-indigo-400"
-                />
-              ))}
-            </div>
+            {["A", "B", "C", "D"].map((opt) => (
+              <input
+                key={opt}
+                type="text"
+                placeholder={`Option ${opt}`}
+                value={imageQuestion[`option${opt}`] || ""}
+                onChange={(e) =>
+                  setImageQuestion({
+                    ...imageQuestion,
+                    [`option${opt}`]: e.target.value,
+                  })
+                }
+                className="border border-gray-300 p-3 rounded-md focus:ring-2 focus:ring-indigo-400"
+              />
+            ))}
+          </div>
+
 
             <select
               value={imageQuestion.correctOption}
@@ -567,4 +571,4 @@ const CreateQuiz = () => {
   );
 };
 
-export default CreateQuiz;
+export default CreateQuiz;

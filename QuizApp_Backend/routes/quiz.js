@@ -6,7 +6,8 @@ import {
     getQuizAnswerDistribution, 
     getCategoryWiseAnswerDistribution,
     getCategoryWiseAnswerDistributionForStudent,saveProgress,
-    createQuizByFaculty,getQuizSubmissions
+    createQuizByFaculty,getQuizSubmissions,
+    getQuizTitleById
 } from '../controllers/quizController.js';
 import { getCategoryDistribution } from '../controllers/quizSubmissionController.js';
 import { submitQuiz } from '../controllers/quizSubmissionController.js';
@@ -30,6 +31,7 @@ router.post("/imagebaseqs",  upload.single("image"),createQuizWithImageQuestion)
 // Get a specific quiz by ID
 router.get('/:quizId',isAuthenticated, getQuiz);
 router.delete('/:quizId', deleteQuiz);
+router.get('/title/:quizId',getQuizTitleById)
 
 // Submit a quiz
 router.post('/:quizId/submit', protect2, submitQuiz);

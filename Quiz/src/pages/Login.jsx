@@ -12,7 +12,7 @@ const Login = () => {
     e.preventDefault();
 
     if (!session.trim()) {
-      alert("Please enter session (e.g., 2025-26)");
+      alert("Please enter session (e.g., 2025-2026)");
       return;
     }
 

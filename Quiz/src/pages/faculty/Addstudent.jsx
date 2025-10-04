@@ -244,7 +244,7 @@ const AddStudent = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role="faculty" facultyDetails={facultyDetails} />
 
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col p-5 flex-1">
         <div className="font-sans">
           <Navbar
             userName={`Hey, ${facultyDetails?.name || "Faculty"}`}

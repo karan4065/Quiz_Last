@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 
 const QuizResults = () => {
   const { quizId } = useParams();
-  console.log(quizId)
+  console.log(quizId);
   const location = useLocation();
   const [quizTitle, setQuizTitle] = useState(location.state?.quizTitle || "");
   const [submissions, setSubmissions] = useState([]);
@@ -16,16 +16,13 @@ const QuizResults = () => {
     const fetchQuizTitle = async () => {
       if (!quizTitle) {
         try {
-          const token = localStorage.getItem("token");
           const res = await axios.get(
-            `http://localhost:5000/api/quizzes/${quizId}`,
+            `http://localhost:5000/api/quizzes/title/${quizId}`,
             {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              withCredentials: true,
             }
           );
-          console.log(res.data)
+          console.log("titleee", res.data);
           setQuizTitle(res.data.data.quiz.title || "Untitled Quiz");
         } catch (err) {
           console.error("Failed to fetch quiz title:", err);
@@ -48,7 +45,7 @@ const QuizResults = () => {
 
         if (res.data.success) {
           let subs = res.data.data;
- console.log(sub)
+          console.log(subs);
           subs = await Promise.all(
             subs.map(async (sub) => {
               if (!sub.studentId?.name) return sub;
@@ -81,7 +78,6 @@ const QuizResults = () => {
 
           setSubmissions(subs);
 
-          // Set questions from first submission
           if (subs.length > 0) {
             const uniqueQs = subs[0].answers.map((ans) => ({ _id: ans.questionId }));
             setQuestions(uniqueQs);
@@ -177,7 +173,9 @@ const QuizResults = () => {
                   <td className="px-4 py-2 border border-gray-300">{sub.studentId?.studentId || "-"}</td>
                   <td className="px-4 py-2 border border-gray-300">{sub.studentId?.department || "-"}</td>
                   <td className="px-4 py-2 border border-gray-300">{sub.studentId?.year || "-"}</td>
-                  <td className="px-4 py-2 border border-gray-300">{new Date(sub.submittedAt).toLocaleString()}</td>
+                  <td className="px-4 py-2 border border-gray-300">
+                    {new Date(sub.submittedAt).toLocaleString()}
+                  </td>
                   {questions.map((q) => {
                     const answer = sub.answers.find((a) => a.questionId === q._id);
                     return (
@@ -186,7 +184,9 @@ const QuizResults = () => {
                       </td>
                     );
                   })}
-                  <td className="px-4 py-2 border border-gray-300 text-center font-bold text-blue-600">{totalScore}</td>
+                  <td className="px-4 py-2 border border-gray-300 text-center font-bold text-blue-600">
+                    {totalScore}
+                  </td>
                 </tr>
               );
             })}
