@@ -48,7 +48,7 @@ const connectDB = async () => {
 //   }
 // };
 
-// Run the function
+// // Run the function
 // addFaculty();
 
 export default connectDB;

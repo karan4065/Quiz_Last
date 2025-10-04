@@ -432,42 +432,108 @@ export const getCategoryWiseAnswerDistribution = async (req, res) => {
 
 // ---------------- Category-wise answer distribution for a student ----------------
 // ---------------- Category-wise answer distribution for a student ----------------
+// export const getCategoryWiseAnswerDistributionForStudent = async (req, res) => {
+//   const { submissionId } = req.params;
+//   const { studentId } = req.body;
+
+//   try {
+//     // Fetch the submission to get quizId
+//     const submission = await QuizSubmission.findById(submissionId);
+//     if (!submission) {
+//       return res.status(404).json({ success: false, message: "Submission not found" });
+//     }
+
+//     const quizId = submission.quizId;
+//     console.log(quizId)
+// if (!quizId) {
+//   return res.status(400).json({ 
+//     success: false, 
+//     message: "Submission has no associated quiz, cannot compute distribution." 
+//   });
+// }
+//     const results = await QuizSubmission.aggregate([
+//       { $match: { _id: submission._id } }, // match the submission
+//       { $unwind: "$answers" },
+//       { $lookup: { from: "quizzes", localField: "quizId", foreignField: "_id", as: "quizDetails" } },
+//       { $unwind: "$quizDetails" },
+//       { $unwind: "$quizDetails.categories" },
+//       { $unwind: "$quizDetails.categories.questions" },
+//       { $match: { $expr: { $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"] } } },
+//       { $group: { _id: { category: "$quizDetails.categories.category", selectedOption: "$answers.selectedOption" }, count: { $sum: 1 } } },
+//       { $group: { _id: "$_id.category", options: { $push: { option: "$_id.selectedOption", count: "$count" } }, total: { $sum: "$count" } } },
+//       {
+//         $project: {
+//           _id: 0,
+//           category: "$_id",
+//           answers: {
+//             $arrayToObject: {
+//               $map: {
+//                 input: "$options",
+//                 as: "opt",
+//                 in: {
+//                   k: "$$opt.option",
+//                   v: {
+//                     count: "$$opt.count",
+//                     percentage: {
+//                       $cond: [
+//                         { $eq: ["$total", 0] },
+//                         0,
+//                         { $round: [{ $multiply: [{ $divide: ["$$opt.count", "$total"] }, 100] }, 2] }
+//                       ]
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     ]);
+// console.log("mm",results)
+//     res.json({ success: true, message: "Category-wise distribution for student fetched successfully", data: results });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: "Server error", error: error.message });
+//   }
+// };
+
 export const getCategoryWiseAnswerDistributionForStudent = async (req, res) => {
   const { submissionId } = req.params;
   const { studentId } = req.body;
 
   try {
-    // 1. Find the submission first to extract quizId
-    const submission = await QuizSubmission.findOne({
-      _id: submissionId,
-      studentId: new mongoose.Types.ObjectId(studentId),
-    });
+    // Validate submissionId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(submissionId)) {
+      return res.status(400).json({ success: false, message: "Invalid submission ID" });
+    }
 
+    // Fetch the submission
+    const submission = await QuizSubmission.findById(submissionId);
     if (!submission) {
-      return res.status(404).json({
+      return res.status(404).json({ success: false, message: "Submission not found" });
+    }
+
+    const quizId = submission.quizId;
+    if (!quizId) {
+      return res.status(400).json({
         success: false,
-        message: "Submission not found for this student",
+        message: "Submission has no associated quiz, cannot compute distribution."
       });
     }
 
-    const quizId = submission.quizId; // ✅ now quizId is defined
+    // Make sure quizId is ObjectId type for aggregation match
+    const quizObjectId =new mongoose.Types.ObjectId(quizId);
 
-    // 2. Run aggregation using quizId + submissionId + studentId
     const results = await QuizSubmission.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(submissionId),
-          studentId: new mongoose.Types.ObjectId(studentId),
-        },
-      },
+      { $match: { _id: submission._id } },
       { $unwind: "$answers" },
       {
         $lookup: {
           from: "quizzes",
           localField: "quizId",
           foreignField: "_id",
-          as: "quizDetails",
-        },
+          as: "quizDetails"
+        }
       },
       { $unwind: "$quizDetails" },
       { $unwind: "$quizDetails.categories" },
@@ -475,27 +541,30 @@ export const getCategoryWiseAnswerDistributionForStudent = async (req, res) => {
       {
         $match: {
           $expr: {
-            $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"],
-          },
-        },
+            $eq: ["$answers.questionId", "$quizDetails.categories.questions._id"]
+          }
+        }
       },
       {
         $group: {
           _id: {
             category: "$quizDetails.categories.category",
-            selectedOption: "$answers.selectedOption",
+            selectedOption: "$answers.selectedOption"
           },
-          count: { $sum: 1 },
-        },
+          count: { $sum: 1 }
+        }
       },
       {
         $group: {
           _id: "$_id.category",
           options: {
-            $push: { option: "$_id.selectedOption", count: "$count" },
+            $push: {
+              option: "$_id.selectedOption",
+              count: "$count"
+            }
           },
-          total: { $sum: "$count" },
-        },
+          total: { $sum: "$count" }
+        }
       },
       {
         $project: {
@@ -514,38 +583,33 @@ export const getCategoryWiseAnswerDistributionForStudent = async (req, res) => {
                       $cond: [
                         { $eq: ["$total", 0] },
                         0,
-                        {
-                          $round: [
-                            {
-                              $multiply: [
-                                { $divide: ["$$opt.count", "$total"] },
-                                100,
-                              ],
-                            },
-                            2,
-                          ],
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+                        { $round: [{ $multiply: [{ $divide: ["$$opt.count", "$total"] }, 100] }, 2] }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     ]);
+
+    console.log("Category-wise results:", results);
 
     res.json({
       success: true,
       message: "Category-wise distribution for student fetched successfully",
-      data: results,
+      data: results
     });
+
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    console.error("Error in getCategoryWiseAnswerDistributionForStudent:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
   }
 };
 

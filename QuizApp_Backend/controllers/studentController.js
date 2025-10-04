@@ -192,9 +192,10 @@ import nodemailer from 'nodemailer'
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
+console.log(email)
     // Check if student exists
     const student = await Student.findOne({ email });
+    console.log(student)
     if (!student) return res.status(400).json({ message: "Email not registered" });
 
     // Generate 6-digit numeric OTP
@@ -234,7 +235,7 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-
+console.log(req.body)
     // Find student with valid token
     const student = await Student.findOne({
       resetPasswordToken: token,
@@ -258,6 +259,38 @@ export const resetPassword = async (req, res) => {
     res.json({ message: "Password reset successful" });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Verify OTP
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    console.log("Verifying OTP for:", email, "OTP:", otp);
+
+    // Find student with matching email + token
+    const student = await Student.findOne({
+      email: email,
+      resetPasswordToken: otp.toString(), // ensure string comparison
+      resetPasswordExpires: { $gt: Date.now() }, // not expired
+    });
+
+    console.log("Student found:", student ? "✅ Yes" : "❌ No");
+
+    if (!student) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Optional: clear OTP fields now or after password reset
+    // student.resetPasswordToken = undefined;
+    // student.resetPasswordExpires = undefined;
+    // await student.save();
+
+    res.json({ message: "OTP verified successfully" });
+  } catch (err) {
+    console.error("Verify OTP Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -586,7 +619,7 @@ export const getStudentSubmissions = async (req, res) => {
 
     // Check if student exists
     const student = await Student.findById(id);
-
+console.log(student)
     if (!student) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }

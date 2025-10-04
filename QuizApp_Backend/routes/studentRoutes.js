@@ -13,7 +13,7 @@ import {
   getStudentSubmissions,
   getStudentByName,
   resultLoginStudent,
-  forgotPassword,resetPassword
+  forgotPassword,resetPassword,verifyOtp
 } from '../controllers/studentController.js';
 
 import { protect } from '../middlewares/authMiddleware.js'; // protect routes if needed
@@ -27,6 +27,7 @@ router.post('/login', loginStudent);
 router.post('/resultlogin', resultLoginStudent);
 router.post('/forgot-password', forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+router.post("/verify-otp", verifyOtp);
 // Student profile & info routes
 router.get('/me', protect, getStudentMe);
 router.get('/studentId/:studentId', getStudentByStudentID);

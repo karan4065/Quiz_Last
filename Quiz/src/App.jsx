@@ -44,8 +44,9 @@ const App = () => {
           <Route path="/createquiz" element={<DashboardLayout><CreateQuiz /></DashboardLayout>} />
           <Route path="/myquiz" element={<DashboardLayout><CreateMyQuizzes /></DashboardLayout>} />
           <Route path="/studentdetails" element={<AddStudent/>}/>
+           <Route path="/:quizId/result" element={<StStudentQuizResult />} />
              <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/admin-dashboard" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
           <Route path="/quiz-results/:quizId" element={<QuizResults />} />
 

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
+import { FaArrowLeft } from "react-icons/fa";
 
 const AddStudent = () => {
   const location = useLocation();
@@ -13,7 +14,11 @@ const AddStudent = () => {
 
   const [studentFile, setStudentFile] = useState(null);
   const [students, setStudents] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(null); // currently open year
+  const [selectedYear, setSelectedYear] = useState(null);
+
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const cardRef = useRef();
 
   // Add student form states
   const [addStudentId, setAddStudentId] = useState("");
@@ -41,9 +46,10 @@ const AddStudent = () => {
     reader.onload = async (e) => {
       const csvText = e.target.result;
       try {
-        const res = await axios.post("http://localhost:5000/api/student/upload-csv", {
-          csvData: csvText,
-        });
+        const res = await axios.post(
+          "http://localhost:5000/api/student/upload-csv",
+          { csvData: csvText }
+        );
         if (res.data.success) {
           alert("✅ Students uploaded successfully!");
           setStudents([...(students || []), ...(res.data.data || [])]);
@@ -62,14 +68,17 @@ const AddStudent = () => {
       return alert("Fill all required fields");
     }
     try {
-      const res = await axios.post("http://localhost:5000/api/student/register", {
-        studentId: addStudentId,
-        name: addName,
-        department: addDepartment,
-        year: addYear,
-        email: addEmail,
-        phone: addPhone,
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/student/register",
+        {
+          studentId: addStudentId,
+          name: addName,
+          department: addDepartment,
+          year: addYear,
+          email: addEmail,
+          phone: addPhone,
+        }
+      );
       if (res.data.success) {
         alert("✅ Student added successfully!");
         setStudents([...(students || []), res.data.data]);
@@ -84,7 +93,9 @@ const AddStudent = () => {
   const handleFetchStudent = async () => {
     if (!editStudentIdInput) return alert("Enter a Student ID to fetch");
     try {
-      const res = await axios.get(`http://localhost:5000/api/student/id/${editStudentIdInput}`);
+      const res = await axios.get(
+        `http://localhost:5000/api/student/id/${editStudentIdInput}`
+      );
       if (res.data.success) {
         const stu = res.data.data;
         setEditingStudent(stu);
@@ -104,14 +115,17 @@ const AddStudent = () => {
   const handleUpdateStudent = async () => {
     if (!editingStudent) return alert("Fetch a student first");
     try {
-      const res = await axios.put(`http://localhost:5000/api/student/${editingStudent._id}`, {
-        studentId: editStudentId,
-        name: editName,
-        department: editDepartment,
-        year: editYear,
-        email: editEmail,
-        phone: editPhone,
-      });
+      const res = await axios.put(
+        `http://localhost:5000/api/student/${editingStudent._id}`,
+        {
+          studentId: editStudentId,
+          name: editName,
+          department: editDepartment,
+          year: editYear,
+          email: editEmail,
+          phone: editPhone,
+        }
+      );
       if (res.data.success) {
         alert("✅ Student updated successfully!");
         setStudents(
@@ -129,12 +143,17 @@ const AddStudent = () => {
 
   const handleDeleteStudent = async () => {
     if (!editingStudent) return alert("Fetch a student first");
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    if (!window.confirm("Are you sure you want to delete this student?"))
+      return;
     try {
-      const res = await axios.delete(`http://localhost:5000/api/student/${editingStudent._id}`);
+      const res = await axios.delete(
+        `http://localhost:5000/api/student/${editingStudent._id}`
+      );
       if (res.data.success) {
         alert("✅ Student deleted!");
-        setStudents((students || []).filter((stu) => stu._id !== editingStudent._id));
+        setStudents(
+          (students || []).filter((stu) => stu._id !== editingStudent._id)
+        );
         clearEditForm();
       }
     } catch (err) {
@@ -143,16 +162,17 @@ const AddStudent = () => {
     }
   };
 
-  // 🔹 Fetch students by year with toggle
+  // 🔹 Fetch students by year
   const fetchStudentsByYear = async (year) => {
     if (selectedYear === year) {
-      // if already open, close it
       setSelectedYear(null);
       setStudents([]);
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:5000/api/student?year=${year}&department=IT`);
+      const res = await axios.get(
+        `http://localhost:5000/api/student?year=${year}&department=IT`
+      );
       if (res.data.success) {
         setStudents(res.data.data);
         setSelectedYear(year);
@@ -166,6 +186,39 @@ const AddStudent = () => {
       setSelectedYear(year);
     }
   };
+
+  // 🔹 Handle student click → fetch submissions
+  const handleStudentClick = async (student) => {
+    setSelectedStudent(student);
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/student/submissions/${student._id}`
+      );
+      if (res.data.success) {
+        console.log(res.data)
+        setSubmissions(res.data.submissions);
+      } else {
+        setSubmissions([]);
+      }
+    } catch (err) {
+      console.error("Error fetching submissions:", err);
+      setSubmissions([]);
+    }
+  };
+
+  // 🔹 Close student card when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (cardRef.current && !cardRef.current.contains(event.target)) {
+        setSelectedStudent(null);
+        setSubmissions([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [cardRef]);
 
   const clearAddForm = () => {
     setAddStudentId("");
@@ -192,13 +245,17 @@ const AddStudent = () => {
       <Sidebar role="faculty" facultyDetails={facultyDetails} />
 
       <div className="flex flex-col flex-1">
-        <Navbar
-          userName={`Hey, ${facultyDetails?.name || "Faculty"}`}
-          onProfileClick={() => navigate(-1)}
-        />
+        <div className="font-sans">
+          <Navbar
+            userName={`Hey, ${facultyDetails?.name || "Faculty"}`}
+            onProfileClick={() => navigate(-1)}
+          />
+        </div>
 
         <main className="p-6 bg-gray-50 flex-1">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-800">Manage Students</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+            Manage Students
+          </h2>
 
           {/* 🔹 Year Filter Buttons */}
           <div className="flex gap-4 mb-6">
@@ -213,54 +270,169 @@ const AddStudent = () => {
             ))}
           </div>
 
-          {/* 🔹 Students Table for Selected Year */}
-          {selectedYear && (
-            <div className="overflow-x-auto mb-6">
-              <h3 className="text-lg font-semibold mb-3">{selectedYear} Year Students</h3>
-              <table className="w-full border border-gray-300 rounded-md shadow-sm">
-                <thead>
-                  <tr className="bg-[#243278] text-white">
-                    <th className="p-2 border">Sr No</th>
-                    <th className="p-2 border">Student ID</th>
-                    <th className="p-2 border">Name</th>
-                    <th className="p-2 border">Department</th>
-                    <th className="p-2 border">Email</th>
-                    <th className="p-2 border">Phone</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.length > 0 ? (
-                    students.map((stu, index) => (
-                      <tr key={stu._id} className="hover:bg-gray-100">
-                        <td className="border p-2 text-center">{index + 1}</td>
-                        <td className="border p-2">{stu.studentId}</td>
-                        <td className="border p-2">{stu.name}</td>
-                        <td className="border p-2">{stu.department}</td>
-                        <td className="border p-2">{stu.email}</td>
-                        <td className="border p-2">{stu.phone}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="text-center p-3 border">
-                        No students found for {selectedYear} Year
-                      </td>
+          {/* 🔹 Student List or Details */}
+          {!selectedStudent ? (
+            selectedYear && (
+              <div className="overflow-x-auto mb-6">
+                <h3 className="text-lg font-semibold mb-3">
+                  {selectedYear} Year Students
+                </h3>
+                <table className="w-full border border-gray-300 rounded-md shadow-sm">
+                  <thead>
+                    <tr className="bg-[#243278] text-white">
+                      <th className="p-2 border">Sr No</th>
+                      <th className="p-2 border">Student ID</th>
+                      <th className="p-2 border">Name</th>
+                      <th className="p-2 border">Department</th>
+                      <th className="p-2 border">Email</th>
+                      <th className="p-2 border">Phone</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {students.length > 0 ? (
+                      students.map((stu, index) => (
+                        <tr
+                          key={stu._id}
+                          onClick={() => handleStudentClick(stu)}
+                          className="hover:bg-gray-100 cursor-pointer"
+                        >
+                          <td className="border p-2 text-center">
+                            {index + 1}
+                          </td>
+                          <td className="border p-2">{stu.studentId}</td>
+                          <td className="border p-2">{stu.name}</td>
+                          <td className="border p-2">{stu.department}</td>
+                          <td className="border p-2">{stu.email}</td>
+                          <td className="border p-2">{stu.phone}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="text-center p-3 border">
+                          No students found for {selectedYear} Year
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : (
+            <div
+              ref={cardRef}
+              className="border shadow-lg bg-white rounded-md max-w-3xl mx-auto p-8 mt-6"
+            >
+              <div className="space-y-3">
+                <div className="flex flex-row justify-between items-center">
+                  <h3 className="text-2xl font-bold border-b pb-2 mb-4 text-[#1e254a]">
+                    {selectedStudent.name}
+                  </h3>
+                  <button
+                    onClick={() => setSelectedStudent(null)}
+                    className="flex items-center py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    <FaArrowLeft className="mr-2" />
+                    Back
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                  <p>
+                    <span className="font-semibold">UID:</span>{" "}
+                    {selectedStudent.studentId}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Email:</span>{" "}
+                    {selectedStudent.email}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Phone:</span>{" "}
+                    {selectedStudent.phone}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Department:</span>{" "}
+                    {selectedStudent.department}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Year:</span>{" "}
+                    {selectedStudent.year}
+                  </p>
+                </div>
+
+                <h4 className="text-lg font-semibold mt-6 border-b pb-1 text-[#1e254a]">
+                  Quiz Submissions
+                </h4>
+                {submissions.length > 0 ? (
+                  <div className="grid md:grid-cols-2 gap-4 mt-3">
+                    {submissions.map((sub) => (
+                      <div
+                        key={sub._id}
+                        className="p-4 border shadow-sm bg-gray-50 rounded-md hover:shadow-md transition"
+                      >
+                        <h5 className="font-semibold text-[#02be3a]">
+                          {sub.quizId?.title || "Untitled Quiz"}
+                      
+                        </h5>
+                        <p className="text-gray-600 text-sm">
+                          Submitted:{" "}
+                          {new Date(sub.submittedAt).toLocaleString()}
+                        </p>
+                     <button
+  onClick={() =>
+    navigate(`/${sub.quizId?._id }/result`, {
+      state: {
+        student: selectedStudent,
+        submissionId: sub._id,
+        quizTitle: sub.quizId?.title || "Untitled Quiz",
+      },
+    })
+  }
+  className="mt-3 bg-[#243278] text-white px-4 py-1 rounded-md hover:bg-[#cd354d] transition"
+>
+  See Result
+</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-gray-600">
+                    No quiz submissions found.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          <div className="flex flex-col md:flex-row gap-6">
+          {/* Existing Add / CSV Upload / Update/Delete UI */}
+          <div className="flex flex-col md:flex-row gap-6 mt-8">
             {/* Left Column - Add Student */}
             <div className="md:w-1/2 w-full">
               <div className="p-5 border rounded-lg shadow bg-white h-full">
-                <h3 className="text-lg font-semibold mb-3 text-[#202d6c]">Add Student</h3>
+                <h3 className="text-lg font-semibold mb-3 text-[#202d6c]">
+                  Add Student
+                </h3>
                 <div className="space-y-2 mb-3">
-                  <input type="text" placeholder="Student ID" value={addStudentId} onChange={(e) => setAddStudentId(e.target.value)} className="border p-2 rounded-md w-full" />
-                  <input type="text" placeholder="Name" value={addName} onChange={(e) => setAddName(e.target.value)} className="border p-2 rounded-md w-full" />
-                  <input type="text" placeholder="Department" value={addDepartment} onChange={(e) => setAddDepartment(e.target.value)} className="border p-2 rounded-md w-full" />
+                  <input
+                    type="text"
+                    placeholder="Student ID"
+                    value={addStudentId}
+                    onChange={(e) => setAddStudentId(e.target.value)}
+                    className="border p-2 rounded-md w-full"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={addName}
+                    onChange={(e) => setAddName(e.target.value)}
+                    className="border p-2 rounded-md w-full"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Department"
+                    value={addDepartment}
+                    onChange={(e) => setAddDepartment(e.target.value)}
+                    className="border p-2 rounded-md w-full"
+                  />
 
                   <select
                     value={addYear}
@@ -274,10 +446,27 @@ const AddStudent = () => {
                     <option value="4">4th Year</option>
                   </select>
 
-                  <input type="email" placeholder="Email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} className="border p-2 rounded-md w-full" />
-                  <input type="text" placeholder="Phone" value={addPhone} onChange={(e) => setAddPhone(e.target.value)} className="border p-2 rounded-md w-full" />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={addEmail}
+                    onChange={(e) => setAddEmail(e.target.value)}
+                    className="border p-2 rounded-md w-full"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Phone"
+                    value={addPhone}
+                    onChange={(e) => setAddPhone(e.target.value)}
+                    className="border p-2 rounded-md w-full"
+                  />
                 </div>
-                <button onClick={handleAddStudent} className="bg-[#202d6c] text-white w-full py-2 rounded hover:bg-[#243278]">Add</button>
+                <button
+                  onClick={handleAddStudent}
+                  className="bg-[#202d6c] text-white w-full py-2 rounded hover:bg-[#243278]"
+                >
+                  Add
+                </button>
               </div>
             </div>
 
@@ -285,26 +474,69 @@ const AddStudent = () => {
             <div className="md:w-1/2 w-full flex flex-col gap-6">
               {/* Upload CSV */}
               <div className="p-5 border rounded-lg shadow bg-white">
-                <h3 className="text-lg font-semibold mb-3 text-[#202d6c]">Upload Students from CSV</h3>
+                <h3 className="text-lg font-semibold mb-3 text-[#202d6c]">
+                  Upload Students from CSV
+                </h3>
                 <div className="flex flex-col gap-2">
-                  <input type="file" accept=".csv" onChange={handleFileChange} className="border p-2 rounded-md w-full" />
-                  <button onClick={handleStudentUpload} className="bg-[#243278] text-white py-2 rounded hover:bg-[#293989]">Upload</button>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="border p-2 rounded-md w-full"
+                  />
+                  <button
+                    onClick={handleStudentUpload}
+                    className="bg-[#243278] text-white py-2 rounded hover:bg-[#293989]"
+                  >
+                    Upload
+                  </button>
                 </div>
               </div>
 
               {/* Update/Delete */}
               <div className="p-5 border rounded-lg shadow bg-white">
-                <h3 className="text-lg font-semibold mb-3 text-[#202d6c]">Update / Delete Student</h3>
+                <h3 className="text-lg font-semibold mb-3 text-[#202d6c]">
+                  Update / Delete Student
+                </h3>
                 <div className="flex gap-2 mb-3">
-                  <input type="text" placeholder="Enter Student ID" value={editStudentIdInput} onChange={(e) => setEditStudentIdInput(e.target.value)} className="border p-2 rounded-md flex-1" />
-                  <button onClick={handleFetchStudent} className="bg-[#243278] text-white px-4 rounded hover:bg-[#222d66]">Fetch</button>
+                  <input
+                    type="text"
+                    placeholder="Enter Student ID"
+                    value={editStudentIdInput}
+                    onChange={(e) => setEditStudentIdInput(e.target.value)}
+                    className="border p-2 rounded-md flex-1"
+                  />
+                  <button
+                    onClick={handleFetchStudent}
+                    className="bg-[#243278] text-white px-4 rounded hover:bg-[#222d66]"
+                  >
+                    Fetch
+                  </button>
                 </div>
 
                 {editingStudent && (
                   <div className="space-y-2">
-                    <input type="text" placeholder="Student ID" value={editStudentId} onChange={(e) => setEditStudentId(e.target.value)} className="border p-2 rounded-md w-full" />
-                    <input type="text" placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} className="border p-2 rounded-md w-full" />
-                    <input type="text" placeholder="Department" value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} className="border p-2 rounded-md w-full" />
+                    <input
+                      type="text"
+                      placeholder="Student ID"
+                      value={editStudentId}
+                      onChange={(e) => setEditStudentId(e.target.value)}
+                      className="border p-2 rounded-md w-full"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="border p-2 rounded-md w-full"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Department"
+                      value={editDepartment}
+                      onChange={(e) => setEditDepartment(e.target.value)}
+                      className="border p-2 rounded-md w-full"
+                    />
 
                     <select
                       value={editYear}
@@ -318,12 +550,34 @@ const AddStudent = () => {
                       <option value="4">4th Year</option>
                     </select>
 
-                    <input type="email" placeholder="Email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="border p-2 rounded-md w-full" />
-                    <input type="text" placeholder="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="border p-2 rounded-md w-full" />
-                    <div className="flex gap-2 mt-2">
-                      <button onClick={handleUpdateStudent} className="bg-yellow-500 text-white flex-1 py-2 rounded hover:bg-yellow-600">Update</button>
-                      <button onClick={handleDeleteStudent} className="bg-red-500 text-white flex-1 py-2 rounded hover:bg-red-600">Delete</button>
-                      <button onClick={clearEditForm} className="bg-gray-500 text-white flex-1 py-2 rounded hover:bg-gray-600">Cancel</button>
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="border p-2 rounded-md w-full"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Phone"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="border p-2 rounded-md w-full"
+                    />
+
+                    <div className="flex gap-3 mt-3">
+                      <button
+                        onClick={handleUpdateStudent}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                      >
+                        Update
+                      </button>
+                      <button
+                        onClick={handleDeleteStudent}
+                        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 )}
@@ -337,3 +591,4 @@ const AddStudent = () => {
 };
 
 export default AddStudent;
+

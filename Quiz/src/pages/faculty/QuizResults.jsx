@@ -48,7 +48,7 @@ const QuizResults = () => {
 
         if (res.data.success) {
           let subs = res.data.data;
- 
+ console.log(sub)
           subs = await Promise.all(
             subs.map(async (sub) => {
               if (!sub.studentId?.name) return sub;
