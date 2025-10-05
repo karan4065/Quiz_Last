@@ -6,7 +6,7 @@ dotenv.config();  // Make sure to load the .env file
 
 const connectDB = async () => {
   try {
-    await mongoose.connect("mongodb://localhost:27017/divyanshQuizSystem");
+    await mongoose.connect("mongodb+srv://divyanshsvpcet:divyansh9850364491@cluster0.iuiecdm.mongodb.net/");
     console.log('MongoDB connected successfully ');
   } catch (error) {
     console.error('Error connecting to MongoDB:', error.message);
@@ -15,12 +15,12 @@ const connectDB = async () => {
 };
 // const addFaculty = async () => {
 //   try {
-//     const name = 'Virat';
-//     const email = 'virat@gmail.com';
-//     const department = 'Computer Science';
-//     const phone = '9876543210';
+//     const name = 'karan';
+//     const email = 'karan@gmail.com';
+//     const department = 'Computer Science ';
+//     const phone = '9699823258';
 //     const isAdmin = true;
-//     const subjects = ['MDM', 'OE'];
+//     const subjects = ['TOC', 'DAA'];
 //     const session = '2025-26';
 //     const semester = 'odd';
 
@@ -48,7 +48,7 @@ const connectDB = async () => {
 //   }
 // };
 
-// // Run the function
+
 // addFaculty();
 
 export default connectDB;
