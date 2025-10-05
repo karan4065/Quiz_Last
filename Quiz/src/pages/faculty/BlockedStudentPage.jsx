@@ -11,10 +11,11 @@ const BlockedStudentPage = () => {
   useEffect(() => {
     const fetchBlockedStudents = async () => {
       try {
-        const { data } = await axios.get(
-          "http://localhost:5000/api/faculty/quizzes/blocked-students",
-          { withCredentials: true }
-        );
+      const { data } = await axios.get(
+  "https://quiz-last.onrender.com/api/faculty/quizzes/blocked-students",
+  { withCredentials: true }
+);
+
         console.log(data)
         if (data.success) setQuizzes(data.data);
       } catch (e) {
@@ -30,11 +31,12 @@ const BlockedStudentPage = () => {
 
   const handleUnblock = async (quizId, studentId) => {
     try {
-      await axios.post(
-        `http://localhost:5000/api/faculty/quizzes/${quizId}/unblock-student`,
-        { studentId },
-        { withCredentials: true }
-      );
+    await axios.post(
+  `https://quiz-last.onrender.com/api/faculty/quizzes/${quizId}/unblock-student`,
+  { studentId },
+  { withCredentials: true }
+);
+
 
       setQuizzes((prev) =>
         prev.map((q) =>

@@ -51,9 +51,10 @@ const CreateQuiz = () => {
     if (!window.confirm("Are you sure you want to delete this quiz?")) return;
 
     try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/quizzes/${quizId}`
-      );
+    const res = await axios.delete(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}`
+);
+
       const data = res.data;
       console.log("Delete response:", data);
       if (data.success) {
@@ -72,9 +73,10 @@ const CreateQuiz = () => {
   const fetchQuizzes = async () => {
     if (!facultyDetails?._id) return;
     try {
-     const res = await axios.get(
-  `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
+ const res = await axios.get(
+  `https://quiz-last.onrender.com/api/faculty/${facultyDetails._id}/quizzes`
 );
+
 
       if (res.data.success) {
         setQuizzes(res.data.data || []);
@@ -94,15 +96,19 @@ const CreateQuiz = () => {
     reader.onload = async (e) => {
       const csvText = e.target.result;
       try {
-        const res = await axios.post("http://localhost:5000/api/quizzes/upload", {
-          title: quizTitle,
-          facultyId: facultyDetails._id,
-          duration: quizDuration,
-          limit: quizLimit,
-          session: quizSession,
-          subject,
-          csvData: csvText,
-        });
+      const res = await axios.post(
+  "https://quiz-last.onrender.com/api/quizzes/upload",
+  {
+    title: quizTitle,
+    facultyId: facultyDetails._id,
+    duration: quizDuration,
+    limit: quizLimit,
+    session: quizSession,
+    subject,
+    csvData: csvText,
+  }
+);
+
         if (res.data.success) {
           toast.success("Quiz upload successfully")
           await fetchQuizzes();
@@ -159,11 +165,12 @@ const CreateQuiz = () => {
     if (imageQuestion.image) formData.append("image", imageQuestion.image);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/quizzes/imagebaseqs",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+     const res = await axios.post(
+  "https://quiz-last.onrender.com/api/quizzes/imagebaseqs",
+  formData,
+  { headers: { "Content-Type": "multipart/form-data" } }
+);
+
       if (res.data.success) {
         toast.success("Image Quiz created successfully!");
         resetForm();
@@ -199,11 +206,12 @@ const CreateQuiz = () => {
     if (image) formData.append("image", image);
 
     try {
-     const res = await axios.post(
-  `http://localhost:5000/api/quizzes/${currentQuizId}/addqs`,
+   const res = await axios.post(
+  `https://quiz-last.onrender.com/api/quizzes/${currentQuizId}/addqs`,
   formData,
   { headers: { "Content-Type": "multipart/form-data" } }
 );
+
 
       if (res.data.success) {
          toast.success("Question added successfully!");

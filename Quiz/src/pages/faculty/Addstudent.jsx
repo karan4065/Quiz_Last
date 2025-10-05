@@ -46,10 +46,11 @@ const AddStudent = () => {
     reader.onload = async (e) => {
       const csvText = e.target.result;
       try {
-        const res = await axios.post(
-          "http://localhost:5000/api/student/upload-csv",
-          { csvData: csvText }
-        );
+       const res = await axios.post(
+  "https://quiz-last.onrender.com/api/student/upload-csv",
+  { csvData: csvText }
+);
+
         if (res.data.success) {
           toast.success("✅ Students uploaded successfully!");
           setStudents([...(students || []), ...(res.data.data || [])]);
@@ -69,17 +70,18 @@ const handleAddStudent = async () => {
   }
 
   try {
-    const res = await axios.post(
-      "http://localhost:5000/api/student/register",
-      {
-        studentId: addStudentId,
-        name: addName,
-        department: facultyDetails?.department, // <- Use this
-        year: addYear,
-        email: addEmail,
-        phone: addPhone,
-      }
-    );
+  const res = await axios.post(
+  "https://quiz-last.onrender.com/api/student/register",
+  {
+    studentId: addStudentId,
+    name: addName,
+    department: facultyDetails?.department,
+    year: addYear,
+    email: addEmail,
+    phone: addPhone,
+  }
+);
+
 
     if (res.data.success) {
       toast.success("✅ Student added successfully!");
@@ -96,9 +98,9 @@ const handleAddStudent = async () => {
   const handleFetchStudent = async () => {
     if (!editStudentIdInput) return toast.error("Enter a Student ID to fetch");
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/student/id/${editStudentIdInput}`
-      );
+    const res = await axios.get(
+  `https://quiz-last.onrender.com/api/student/id/${editStudentIdInput}`
+);
       if (res.data.success) {
         const stu = res.data.data;
         setEditingStudent(stu);
@@ -118,17 +120,18 @@ const handleAddStudent = async () => {
   const handleUpdateStudent = async () => {
     if (!editingStudent) return alert("Fetch a student first");
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/student/${editingStudent._id}`,
-        {
-          studentId: editStudentId,
-          name: editName,
-          department: editDepartment,
-          year: editYear,
-          email: editEmail,
-          phone: editPhone,
-        }
-      );
+   const res = await axios.put(
+  `https://quiz-last.onrender.com/api/student/${editingStudent._id}`,
+  {
+    studentId: editStudentId,
+    name: editName,
+    department: editDepartment,
+    year: editYear,
+    email: editEmail,
+    phone: editPhone,
+  }
+);
+
       if (res.data.success) {
          toast.success("✅ Student updated successfully!");
         setStudents(
@@ -149,9 +152,10 @@ const handleAddStudent = async () => {
     if (!window.confirm("Are you sure you want to delete this student?"))
       return;
     try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/student/${editingStudent._id}`
-      );
+    const res = await axios.delete(
+  `https://quiz-last.onrender.com/api/student/${editingStudent._id}`
+);
+
       if (res.data.success) {
          toast.success("✅ Student deleted!");
         setStudents(
@@ -173,8 +177,8 @@ const handleAddStudent = async () => {
       return;
     }
     try {
-     const res = await axios.get(
-  `http://localhost:5000/api/student?year=${year}&department=${facultyDetails?.department}`
+   const res = await axios.get(
+  `https://quiz-last.onrender.com/api/student?year=${year}&department=${facultyDetails?.department}`
 );
 
       if (res.data.success) {
@@ -195,9 +199,10 @@ const handleAddStudent = async () => {
   const handleStudentClick = async (student) => {
     setSelectedStudent(student);
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/student/submissions/${student._id}`
-      );
+   const res = await axios.get(
+  `https://quiz-last.onrender.com/api/student/submissions/${student._id}`
+);
+
       if (res.data.success) {
         console.log(res.data)
         setSubmissions(res.data.submissions);

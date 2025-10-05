@@ -32,9 +32,14 @@ const StudentDetails = () => {
 
     try {
       // Adjust this URL to your backend csv upload endpoint
-      const res = await axios.post("http://localhost:5000/api/students/upload-csv", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+    const res = await axios.post(
+  "https://quiz-last.onrender.com/api/students/upload-csv",
+  formData,
+  {
+    headers: { "Content-Type": "multipart/form-data" },
+  }
+);
+
 
       if (res.data.success) {
          toast.success("CSV uploaded successfully!");

@@ -22,12 +22,13 @@ const Login = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/faculty/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: username, password, session, semester }),
-        credentials: "include",
-      });
+   const response = await fetch("https://quiz-last.onrender.com/api/faculty/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: username, password, session, semester }),
+  credentials: "include", // ensures cookies are sent
+});
+
 
       const result = await response.json();
       console.log(result.data);

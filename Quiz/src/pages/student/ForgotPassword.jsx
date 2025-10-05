@@ -46,7 +46,11 @@ const ForgotPassword = () => {
     setError("");
     setMessage("");
     try {
-      await axios.post("http://localhost:5000/api/student/verify-otp", { email, otp });
+await axios.post(
+  "https://quiz-last.onrender.com/api/student/verify-otp",
+  { email, otp }
+);
+
       setMessage("OTP verified successfully!");
       setTimeout(() => navigate("/reset-password", { state: { email } }), 1000);
     } catch (err) {
@@ -62,7 +66,11 @@ const ForgotPassword = () => {
     setError("");
     setMessage("");
     try {
-      const res = await axios.post("http://localhost:5000/api/student/forgot-password", { email });
+const res = await axios.post(
+  "https://quiz-last.onrender.com/api/student/forgot-password",
+  { email }
+);
+
       setMessage(res.data.message || "OTP resent to your email!");
       setTimer(60); // restart countdown
     } catch (err) {

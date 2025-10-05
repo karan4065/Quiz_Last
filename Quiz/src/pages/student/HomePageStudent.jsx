@@ -28,9 +28,10 @@ const HomePageStudent = () => {
     const fetchQuizzes = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/student/${student._id}/quizzes`
-        );
+   const response = await axios.get(
+  `https://quiz-last.onrender.com/api/student/${student._id}/quizzes`
+);
+
         if (response.data.success) {
           setQuizzes(response.data.data);
         }

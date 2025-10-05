@@ -31,7 +31,11 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/student/reset-password", { email, password });
+await axios.post(
+  "https://quiz-last.onrender.com/api/student/reset-password",
+  { email, password }
+);
+
       setMessage("Password reset successful!");
       setTimeout(() => navigate("/login"), 2000); // redirect to login
     } catch (err) {

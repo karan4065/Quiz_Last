@@ -15,11 +15,12 @@ const Seeresult = () => {
     setError("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/student/resultlogin",
-        { uid, password },
-        { withCredentials: true }
-      );
+   const response = await axios.post(
+  "https://quiz-last.onrender.com/api/student/resultlogin",
+  { uid, password },
+  { withCredentials: true }
+);
+
 
       if (response.data.success) {
         localStorage.setItem("studentDetails", JSON.stringify(response.data.data));

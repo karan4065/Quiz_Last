@@ -30,11 +30,12 @@ const StStudentQuizResult = () => {
     const fetchResult = async () => {
       setLoading(true);
       try {
-        const response = await axios.post(
-          `http://localhost:5000/api/student/result/${submissionId}`,
-          { studentId },
-          { withCredentials: true }
-        );
+      const response = await axios.post(
+  `https://quiz-last.onrender.com/api/student/result/${submissionId}`,
+  { studentId },
+  { withCredentials: true }
+);
+
 
         if (response.data.success) {
           console.log("Result API Response:", response.data);

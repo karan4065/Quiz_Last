@@ -105,9 +105,10 @@ const Dashboard = ({ role: propRole }) => {
     if (!facultyDetails?._id) return;
     setLoading(true); setError(null);
     try {
-      const response = await axios.get(
-        `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
-      );
+     const response = await axios.get(
+  `https://quiz-last.onrender.com/api/faculty/${facultyDetails._id}/quizzes`
+);
+
       const data = response.data.data || [];
       setQuizzes(data);
       if (data.length > 0) setSelectedQuizId(data[0]._id);

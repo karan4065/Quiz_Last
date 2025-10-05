@@ -33,9 +33,10 @@ const CreateMyQuizzes = () => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/faculty/${facultyDetails._id}/quizzes`
-      );
+    const res = await axios.get(
+  `https://quiz-last.onrender.com/api/faculty/${facultyDetails._id}/quizzes`
+);
+
       const data = res.data;
       if (data.success && Array.isArray(data.data)) {
         setQuizzes(data.data);
@@ -68,9 +69,9 @@ const CreateMyQuizzes = () => {
     if (!window.confirm("Are you sure you want to delete this quiz?")) return;
 
     try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/quizzes/${quizId}`
-      );
+    const res = await axios.delete(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}`
+);
       const data = res.data;
       if (data.success) {
         const updated = quizzes.filter((q) => q._id !== quizId);

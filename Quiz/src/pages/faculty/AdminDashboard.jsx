@@ -39,7 +39,10 @@ const AdminDashboard = () => {
   // Fetch faculties
   const fetchFaculties = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/faculty/getall");
+const res = await axios.get(
+  "https://quiz-last.onrender.com/api/faculty/getall"
+);
+
       if (res.data.success) {
         const deptFaculties = res.data.data.filter(
           (f) => f.department === adminDept && !f.isAdmin
@@ -103,20 +106,22 @@ const AdminDashboard = () => {
       }
 
       if (selectedFaculty) {
-        const res = await axios.put(
-          `http://localhost:5000/api/faculty/update/${selectedFaculty._id}`,
-          formFaculty
-        );
+     const res = await axios.put(
+  `https://quiz-last.onrender.com/api/faculty/update/${selectedFaculty._id}`,
+  formFaculty
+);
+
         if (res.data.success) {
            toast.success("Faculty updated successfully!");
           setSelectedFaculty(null);
           fetchFaculties();
         }
       } else {
-        const res = await axios.post(
-          "http://localhost:5000/api/faculty/register",
-          formFaculty
-        );
+      const res = await axios.post(
+  "https://quiz-last.onrender.com/api/faculty/register",
+  formFaculty
+);
+
         if (res.data.success) {
            toast.success("Faculty added successfully!");
           setFormFaculty({
@@ -142,9 +147,10 @@ const AdminDashboard = () => {
   const handleDeleteFaculty = async (id) => {
     if (!window.confirm("Are you sure you want to delete this faculty?")) return;
     try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/faculty/delete/${id}`
-      );
+    const res = await axios.delete(
+  `https://quiz-last.onrender.com/api/faculty/delete/${id}`
+);
+
       if (res.data.success) {
          toast.success("Faculty deleted!");
         setSelectedFaculty(null);
@@ -182,9 +188,11 @@ const AdminDashboard = () => {
   const handleCSVSubmit = async () => {
     if (!csvFaculties.length) return alert("Upload CSV first!");
     try {
-      const res = await axios.post("http://localhost:5000/api/faculty/upload-csv", {
-        faculties: csvFaculties,
-      });
+   const res = await axios.post(
+  "https://quiz-last.onrender.com/api/faculty/upload-csv",
+  { faculties: csvFaculties }
+);
+
       if (res.data.success) {
          toast.success("CSV uploaded successfully!");
         setCsvFaculties([]);

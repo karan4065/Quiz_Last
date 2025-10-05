@@ -20,10 +20,10 @@ const StudentResult = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        console.log("Fetching quizzes for Student ID:", student._id);
-        const response = await axios.get(
-          `http://localhost:5000/api/student/${student._id}/quizzes`
-        );
+       console.log("Fetching quizzes for Student ID:", student._id);
+const response = await axios.get(
+  `https://quiz-last.onrender.com/api/student/${student._id}/quizzes`
+);
 
         console.log("API Response:", response.data);
 

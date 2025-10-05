@@ -16,12 +16,13 @@ const QuizResults = () => {
     const fetchQuizTitle = async () => {
       if (!quizTitle) {
         try {
-          const res = await axios.get(
-            `http://localhost:5000/api/quizzes/title/${quizId}`,
-            {
-              withCredentials: true,
-            }
-          );
+        const res = await axios.get(
+  `https://quiz-last.onrender.com/api/quizzes/title/${quizId}`,
+  {
+    withCredentials: true,
+  }
+);
+
           console.log("titleee", res.data);
           setQuizTitle(res.data.data.quiz.title || "Untitled Quiz");
         } catch (err) {
@@ -34,14 +35,15 @@ const QuizResults = () => {
     const fetchSubmissions = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `http://localhost:5000/api/quizzes/${quizId}/submissions`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const res = await axios.get(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}/submissions`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
 
         if (res.data.success) {
           let subs = res.data.data;
@@ -50,16 +52,17 @@ const QuizResults = () => {
             subs.map(async (sub) => {
               if (!sub.studentId?.name) return sub;
               try {
-                const studentRes = await axios.get(
-                  `http://localhost:5000/api/student/info?name=${encodeURIComponent(
-                    sub.studentId.name
-                  )}`,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  }
-                );
+              const studentRes = await axios.get(
+  `https://quiz-last.onrender.com/api/student/info?name=${encodeURIComponent(
+    sub.studentId.name
+  )}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
                 const studentData = studentRes.data.data;
                 return {
                   ...sub,

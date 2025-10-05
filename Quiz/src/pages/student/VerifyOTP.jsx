@@ -12,7 +12,11 @@ const VerifyOTP = ({ email, onVerified }) => {
     setLoading(true);
     try {
       // Verify OTP with backend — assuming an API endpoint to validate OTP
-      await axios.post("http://localhost:5000/api/student/verify-otp", { email, otp });
+await axios.post(
+  "https://quiz-last.onrender.com/api/student/verify-otp",
+  { email, otp }
+);
+
       onVerified(otp); // move to reset password with valid token (otp)
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");

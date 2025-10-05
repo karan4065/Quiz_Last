@@ -182,11 +182,11 @@ const Quiz = () => {
      --------------------- */
 const blockStudent = async () => {
   try {
-    await axios.post(
-      `http://localhost:5000/api/quizzes/${quizId}/block-student`,
-      {}, // empty body
-      { withCredentials: true } // ensures cookie is sent
-    );
+ await axios.post(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}/block-student`,
+  {}, // empty body
+  { withCredentials: true } // ensures cookie is sent
+);
 
     // Freeze the quiz immediately
     setQuizFrozen(true);
@@ -258,10 +258,11 @@ const blockStudent = async () => {
   const loadData = async () => {
     try {
       // Load student info
-      const { data: studentData } = await axios.get(
-        "http://localhost:5000/api/student/me",
-        { withCredentials: true }
-      );
+ const { data: studentData } = await axios.get(
+  "https://quiz-last.onrender.com/api/student/me",
+  { withCredentials: true }
+);
+
       if (studentData.success) setStudent(studentData.student);
       else handleLogout();
     } catch {
@@ -270,10 +271,11 @@ const blockStudent = async () => {
 
     try {
       // Load quiz info
-      const { data } = await axios.get(
-        `http://localhost:5000/api/quizzes/${quizId}`,
-        { withCredentials: true }
-      );
+    const { data } = await axios.get(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}`,
+  { withCredentials: true }
+);
+
 
       if (!data.success) {
         // Quiz already attempted
@@ -343,11 +345,12 @@ const blockStudent = async () => {
   const saveProgress = async () => {
     if (quizCompleted || quizFrozen || !progressLoaded) return;
     try {
-      await axios.post(
-        `http://localhost:5000/api/quizzes/${quizId}/save-progress`,
-        { currentQuestionIndex, answers, timeLeft },
-        { withCredentials: true }
-      );
+    await axios.post(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}/save-progress`,
+  { currentQuestionIndex, answers, timeLeft },
+  { withCredentials: true }
+);
+
     } catch (e) {
       console.error("Save progress error:", e);
     }
@@ -396,11 +399,12 @@ const blockStudent = async () => {
     if (quizCompleted) return;
     try {
       setSubmitting(true);
-      await axios.post(
-        `http://localhost:5000/api/quizzes/${quizId}/submit`,
-        { answers },
-        { withCredentials: true }
-      );
+    await axios.post(
+  `https://quiz-last.onrender.com/api/quizzes/${quizId}/submit`,
+  { answers },
+  { withCredentials: true }
+);
+
       setQuizCompleted(true);
       exitFullscreen();
       navigate("/thank-you");
