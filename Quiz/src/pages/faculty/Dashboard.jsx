@@ -9,7 +9,7 @@ import {
   buildStyles
 } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-
+import toast,{Toaster} from 'react-hot-toast'
 // Animated number component for smooth counting
 const AnimatedNumber = ({ value }) => {
   const [count, setCount] = useState(0);

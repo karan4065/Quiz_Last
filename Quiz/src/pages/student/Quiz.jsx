@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
-
+import toast,{Toaster} from 'react-hot-toast'
 /* =========================
    Seeded shuffle utilities
    (unchanged functionality)
@@ -192,7 +192,7 @@ const blockStudent = async () => {
     setQuizFrozen(true);
     setSubmitting(false);
 
-    alert("You have been blocked from this quiz due to illegal activity!");
+    toast.error("You have been blocked from this quiz due to illegal activity!");
 
     // Navigate to the blocked page after short delay
 
@@ -244,7 +244,7 @@ const blockStudent = async () => {
         setQuizFrozen(true);
         handleSubmit();
         blockStudent();
-        alert("Tab change detected! You are blocked and quiz is submitted.");
+        toast.error("Tab change detected! You are blocked and quiz is submitted.");
       }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -277,7 +277,7 @@ const blockStudent = async () => {
 
       if (!data.success) {
         // Quiz already attempted
-        navigate("/already-attempted");
+        navigate("/");
         return;
       }
 
@@ -288,7 +288,7 @@ const blockStudent = async () => {
       // Set blocked state if student is blocked
       if (isBlocked) {
         setQuizFrozen(true); // freeze the quiz
-        alert(data.message || "You are blocked from this quiz.");
+        toast.error(data.message || "You are blocked from this quiz.");
       }
 
       setCategories(quiz.categories || []);
@@ -458,7 +458,7 @@ const blockStudent = async () => {
    return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-200 select-none">
       <Navbar userName={student?.name || "Student"} onProfileClick={toggleSidebar} />
-
+<Toaster/>
       {/* Sidebar & overlay */}
       {sidebarOpen && (
         <>
@@ -563,19 +563,7 @@ const blockStudent = async () => {
           </div>
 
           <div className="mt-auto">
-            <button
-              onClick={() => {
-                if (!quizFrozen && !quizCompleted) {
-                  if (window.confirm("Are you sure you want to submit the quiz now?")) {
-                    handleSubmit();
-                  }
-                }
-              }}
-              className="mt-4 w-full py-2 rounded-md bg-gradient-to-r from-indigo-600 to-indigo-800 text-white hover:from-indigo-700 hover:to-indigo-900 transition"
-              disabled={quizFrozen || quizCompleted || answers.length !== questions.length}
-            >
-              Quick Submit
-            </button>
+           
           </div>
         </aside>
       </main>

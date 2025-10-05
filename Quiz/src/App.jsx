@@ -4,6 +4,7 @@ import { AuthProvider } from "./components/AuthContext";
 import Sidebar from "./components/Sidebar";
 import StudentLogin from "./pages/StudentLogin";
 // Pages
+import Error from "./Error";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/faculty/Dashboard";
@@ -42,6 +43,7 @@ const App = () => {
           <Route path="/seeresult" element={<Seeresult />} />
           <Route path="/result/:id" element={<HomePageStudent />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="*" element={<Error />} />
         <Route path="/blockstudents" element={<BlockedStudentPage/>} />
           <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
           <Route path="/createquiz" element={<DashboardLayout><CreateQuiz /></DashboardLayout>} />

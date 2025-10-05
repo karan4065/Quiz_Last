@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import toast,{Toaster} from 'react-hot-toast'
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -12,12 +12,12 @@ const Login = () => {
     e.preventDefault();
 
     if (!session.trim()) {
-      alert("Please enter session (e.g., 2025-2026)");
+      toast.error("Please enter session (e.g., 2025-2026)");
       return;
     }
 
     if (!["even", "odd"].includes(semester)) {
-      alert("Semester must be either 'even' or 'odd'");
+      toast.error("Semester must be either 'even' or 'odd'");
       return;
     }
 
@@ -146,6 +146,7 @@ const Login = () => {
               >
                 Login
               </button>
+             
             </form>
           </div>
         </div>

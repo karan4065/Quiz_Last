@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import { FaArrowLeft } from "react-icons/fa";
-
+import toast,{Toaster} from 'react-hot-toast'
 const AddStudent = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const AddStudent = () => {
   const handleFileChange = (e) => setStudentFile(e.target.files[0]);
 
   const handleStudentUpload = () => {
-    if (!studentFile) return alert("Please select a CSV file.");
+    if (!studentFile) return toast.error("Please select a CSV file.");
     const reader = new FileReader();
     reader.onload = async (e) => {
       const csvText = e.target.result;
@@ -51,47 +51,50 @@ const AddStudent = () => {
           { csvData: csvText }
         );
         if (res.data.success) {
-          alert("✅ Students uploaded successfully!");
+          toast.success("✅ Students uploaded successfully!");
           setStudents([...(students || []), ...(res.data.data || [])]);
           setStudentFile(null);
-        } else alert("❌ " + res.data.message);
+        } else toast.error("❌ " + res.data.message);
       } catch (err) {
         console.error(err);
-        alert("❌ Something went wrong.");
+        toast.error("❌ Something went wrong.");
       }
     };
     reader.readAsText(studentFile);
   };
 
-  const handleAddStudent = async () => {
-    if (!addStudentId || !addName || !addDepartment || !addYear || !addEmail) {
-      return alert("Fill all required fields");
-    }
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/api/student/register",
-        {
-          studentId: addStudentId,
-          name: addName,
-          department: addDepartment,
-          year: addYear,
-          email: addEmail,
-          phone: addPhone,
-        }
-      );
-      if (res.data.success) {
-        alert("✅ Student added successfully!");
-        setStudents([...(students || []), res.data.data]);
-        clearAddForm();
-      } else alert("❌ " + res.data.message);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Something went wrong.");
-    }
-  };
+const handleAddStudent = async () => {
+  if (!addStudentId || !addName || !addYear || !addEmail) {
+    return toast.error("Fill all required fields");
+  }
+
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/student/register",
+      {
+        studentId: addStudentId,
+        name: addName,
+        department: facultyDetails?.department, // <- Use this
+        year: addYear,
+        email: addEmail,
+        phone: addPhone,
+      }
+    );
+
+    if (res.data.success) {
+      toast.success("✅ Student added successfully!");
+      setStudents([...(students || []), res.data.data]);
+      clearAddForm();
+    } else toast.error("❌ " + res.data.message);
+  } catch (err) {
+    console.error(err);
+    toast.error("❌ Something went wrong.");
+  }
+};
+
 
   const handleFetchStudent = async () => {
-    if (!editStudentIdInput) return alert("Enter a Student ID to fetch");
+    if (!editStudentIdInput) return toast.error("Enter a Student ID to fetch");
     try {
       const res = await axios.get(
         `http://localhost:5000/api/student/id/${editStudentIdInput}`
@@ -105,10 +108,10 @@ const AddStudent = () => {
         setEditYear(stu.year);
         setEditEmail(stu.email);
         setEditPhone(stu.phone);
-      } else alert(res.data.message);
+      } else toast.error(res.data.message);
     } catch (err) {
       console.error(err);
-      alert("❌ Student not found");
+      toast.error("❌ Student not found");
     }
   };
 
@@ -127,17 +130,17 @@ const AddStudent = () => {
         }
       );
       if (res.data.success) {
-        alert("✅ Student updated successfully!");
+         toast.success("✅ Student updated successfully!");
         setStudents(
           (students || []).map((stu) =>
             stu._id === editingStudent._id ? res.data.data : stu
           )
         );
         clearEditForm();
-      } else alert("❌ " + res.data.message);
+      } else  toast.error("❌ " + res.data.message);
     } catch (err) {
       console.error(err);
-      alert("❌ Something went wrong.");
+     toast.error("❌ Something went wrong.");
     }
   };
 
@@ -150,7 +153,7 @@ const AddStudent = () => {
         `http://localhost:5000/api/student/${editingStudent._id}`
       );
       if (res.data.success) {
-        alert("✅ Student deleted!");
+         toast.success("✅ Student deleted!");
         setStudents(
           (students || []).filter((stu) => stu._id !== editingStudent._id)
         );
@@ -170,9 +173,10 @@ const AddStudent = () => {
       return;
     }
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/student?year=${year}&department=IT`
-      );
+     const res = await axios.get(
+  `http://localhost:5000/api/student?year=${year}&department=${facultyDetails?.department}`
+);
+
       if (res.data.success) {
         setStudents(res.data.data);
         setSelectedYear(year);
@@ -243,7 +247,7 @@ const AddStudent = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role="faculty" facultyDetails={facultyDetails} />
-
+<Toaster/>
       <div className="flex flex-col p-5 flex-1">
         <div className="font-sans">
           <Navbar
@@ -426,13 +430,13 @@ const AddStudent = () => {
                     onChange={(e) => setAddName(e.target.value)}
                     className="border p-2 rounded-md w-full"
                   />
-                  <input
-                    type="text"
-                    placeholder="Department"
-                    value={addDepartment}
-                    onChange={(e) => setAddDepartment(e.target.value)}
-                    className="border p-2 rounded-md w-full"
-                  />
+                 <input
+  type="text"
+  placeholder="Department"
+  value={facultyDetails?.department || ""}
+  disabled
+  className="border p-2 rounded-md w-full bg-gray-100"
+/>
 
                   <select
                     value={addYear}
@@ -530,13 +534,13 @@ const AddStudent = () => {
                       onChange={(e) => setEditName(e.target.value)}
                       className="border p-2 rounded-md w-full"
                     />
-                    <input
-                      type="text"
-                      placeholder="Department"
-                      value={editDepartment}
-                      onChange={(e) => setEditDepartment(e.target.value)}
-                      className="border p-2 rounded-md w-full"
-                    />
+                   <input
+  type="text"
+  placeholder="Department"
+  value={facultyDetails?.department || ""}
+  disabled
+  className="border p-2 rounded-md w-full bg-gray-100"
+/>
 
                     <select
                       value={editYear}

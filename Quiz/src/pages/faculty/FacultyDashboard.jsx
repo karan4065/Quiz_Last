@@ -5,7 +5,7 @@ import Navbar from "../../components/Navbar";
 import CreateQuiz from "./CreateQuiz";
 import Addstudent from "./Addstudent";
 import { FaArrowLeft } from "react-icons/fa";
-
+import toast,{Toaster} from 'react-hot-toast'
 const FacultyDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "./Navbar";
-
+import toast,{Toaster} from 'react-hot-toast'
 const StudentDetails = () => {
   const navigate = useNavigate();
 
@@ -21,7 +21,7 @@ const StudentDetails = () => {
   // CSV upload handler
   const handleCsvUpload = async () => {
     if (!csvFile) {
-      alert("Please select a CSV file first.");
+       toast.error("Please select a CSV file first.");
       return;
     }
 
@@ -37,15 +37,15 @@ const StudentDetails = () => {
       });
 
       if (res.data.success) {
-        alert("CSV uploaded successfully!");
+         toast.success("CSV uploaded successfully!");
         setCsvFile(null);
         fetchStudents();
       } else {
-        alert("Failed to upload CSV.");
+         toast.error("Failed to upload CSV.");
       }
     } catch (err) {
       console.error("CSV upload error:", err);
-      alert("Error uploading CSV.");
+      toast.error("Error uploading CSV.");
     } finally {
       setCsvUploading(false);
     }

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { FaSignOutAlt, FaClipboardList } from "react-icons/fa";
 import axios from "axios";
 import logo  from '../../assets/logo.png';
-
+import toast,{Toaster} from 'react-hot-toast'
 const HomePageStudent = () => {
   const navigate = useNavigate();
   const [student, setStudent] = useState(null);

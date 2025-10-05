@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "./Navbar";
-
+import toast,{Toaster} from 'react-hot-toast'
 const CreateMyQuizzes = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,7 +76,7 @@ const CreateMyQuizzes = () => {
         const updated = quizzes.filter((q) => q._id !== quizId);
         setQuizzes(updated);
         applyFilters(updated, searchTerm, selectedSession);
-        alert("Quiz deleted successfully!");
+        toast.success("Quiz deleted successfully!");
       } else {
         alert("Failed to delete quiz.");
       }
@@ -115,6 +115,7 @@ const CreateMyQuizzes = () => {
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen">
       <div className="flex-grow">
+        <Toaster/>
         <Navbar
           userName={`Hey, ${facultyDetails?.name || "Faculty"}`}
           onProfileClick={() => navigate(-1)}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
-import {toast,Toaster} from  'react-hot-toast'
+import toast,{Toaster} from  'react-hot-toast'
 const CreateQuiz = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,7 +87,7 @@ const CreateQuiz = () => {
 
   const handleQuizUpload = async () => {
     if (!quizFile || !quizTitle || !quizDuration || !subject || !quizSession || !quizLimit) {
-      return alert("All fields are required for CSV upload");
+      return toast.error("All fields are required for CSV upload");
     }
 
     const reader = new FileReader();
@@ -104,14 +104,15 @@ const CreateQuiz = () => {
           csvData: csvText,
         });
         if (res.data.success) {
+          toast.success("Quiz upload successfully")
           await fetchQuizzes();
           resetForm();
         } else {
-          alert("Upload failed: " + (res.data.message || ""));
+           toast.error("Upload failed: " + (res.data.message || ""));
         }
       } catch (err) {
         console.error("Upload error:", err);
-        alert("Upload failed");
+         toast.error("Upload failed");
       }
     };
     reader.readAsText(quizFile);
@@ -133,7 +134,7 @@ const CreateQuiz = () => {
       !imageQuestion.optionC ||
       !imageQuestion.optionD
     ) {
-      return alert("All required fields must be filled");
+      return toast.error("All required fields must be filled");
     }
 
     const formData = new FormData();
@@ -164,7 +165,7 @@ const CreateQuiz = () => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
       if (res.data.success) {
-        alert("Image Quiz created successfully!");
+        toast.success("Image Quiz created successfully!");
         resetForm();
         fetchQuizzes();
       } else {
@@ -186,7 +187,7 @@ const CreateQuiz = () => {
       imageQuestion;
 
     if (!category || !optionA || !optionB || !optionC || !optionD) {
-      return alert("All fields except image are required");
+      return toast.error("All fields except image are required");
     }
 
     const formData = new FormData();
@@ -205,15 +206,15 @@ const CreateQuiz = () => {
 );
 
       if (res.data.success) {
-        alert("Question added successfully!");
+         toast.success("Question added successfully!");
         resetImageForm();
         fetchQuizzes();
       } else {
-        alert("Add question failed: " + (res.data.message || ""));
+         toast.error("Add question failed: " + (res.data.message || ""));
       }
     } catch (err) {
       console.error("Add image question error:", err);
-      alert("Add image question failed");
+       toast.error("Add image question failed");
     }
   };
 

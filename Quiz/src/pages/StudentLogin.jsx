@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import toast,{Toaster} from 'react-hot-toast'
 const StudentLogin = () => {
   const [uid, setUid] = useState("");
   const [password, setPassword] = useState("");
@@ -121,6 +121,15 @@ const StudentLogin = () => {
                 disabled={loading}
               >
                 {loading ? "Logging in..." : "Login"}
+              </button>
+              <button
+             onClick={()=>{
+              navigate("/")
+             }}
+                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
+               
+              >
+              Home
               </button>
             </form>
           </div>

@@ -92,6 +92,15 @@ const Seeresult = () => {
               >
                 {loading ? "Logging in..." : "Login"}
               </button>
+              <button
+           onClick={()=>{
+            navigate("/")
+           }}
+                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
+               
+              >
+                Home
+              </button>
             </form>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar";
 import Papa from "papaparse";
-
+import toast,{Toaster} from 'react-hot-toast'
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       if (!formFaculty.session || !formFaculty.semester) {
-        alert("Session and Semester are required");
+      toast.error("Session and Semester are required");
         return;
       }
 
@@ -108,7 +108,7 @@ const AdminDashboard = () => {
           formFaculty
         );
         if (res.data.success) {
-          alert("Faculty updated successfully!");
+           toast.success("Faculty updated successfully!");
           setSelectedFaculty(null);
           fetchFaculties();
         }
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
           formFaculty
         );
         if (res.data.success) {
-          alert("Faculty added successfully!");
+           toast.success("Faculty added successfully!");
           setFormFaculty({
             name: "",
             email: "",
@@ -134,7 +134,7 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       console.error(err);
-      alert("Error saving faculty.");
+     toast.error("Error saving faculty.");
     }
   };
 
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
         `http://localhost:5000/api/faculty/delete/${id}`
       );
       if (res.data.success) {
-        alert("Faculty deleted!");
+         toast.success("Faculty deleted!");
         setSelectedFaculty(null);
         fetchFaculties();
       }
@@ -186,13 +186,13 @@ const AdminDashboard = () => {
         faculties: csvFaculties,
       });
       if (res.data.success) {
-        alert("CSV uploaded successfully!");
+         toast.success("CSV uploaded successfully!");
         setCsvFaculties([]);
         fetchFaculties();
       }
     } catch (err) {
       console.error(err);
-      alert("Error uploading CSV");
+       toast.error("Error uploading CSV");
     }
   };
 
@@ -212,7 +212,7 @@ const AdminDashboard = () => {
     <div className="flex min-h-screen bg-[#f5f6fa] font-sans">
       <div className={`flex-grow transition-all duration-300`}>
         <Navbar userName="Admin Dashboard" onProfileClick={toggleSidebar} />
-
+<Toaster/>
         <main className="p-8 max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold mb-6 text-[#1d285d]">Faculty Management</h1>
 
