@@ -18,22 +18,20 @@ const Sidebar = () => {
 
   // Get facultyDetails from location or localStorage
   const [facultyDetails, setFacultyDetails] = useState(() => {
-  const fromState = location.state?.facultyDetails;
-  const fromStorage = localStorage.getItem("facultyDetails");
+    const fromState = location.state?.facultyDetails;
+    const fromStorage = localStorage.getItem("facultyDetails");
 
-  if (fromState) return fromState;
+    if (fromState) return fromState;
 
-  try {
-    return fromStorage ? JSON.parse(fromStorage) : null;
-  } catch (err) {
-    console.error("Error parsing facultyDetails from localStorage:", err);
-    return null;
-  }
-});
-
+    try {
+      return fromStorage ? JSON.parse(fromStorage) : null;
+    } catch (err) {
+      console.error("Error parsing facultyDetails from localStorage:", err);
+      return null;
+    }
+  });
 
   const [role, setRole] = useState(() => {
-    // Default to 'admin' if isAdmin is true, else 'faculty'
     if (facultyDetails?.isAdmin) {
       return facultyDetails?.role || "admin";
     }
@@ -42,7 +40,6 @@ const Sidebar = () => {
 
   const [isLoggedIn, setIsLoggedIn] = useState(!!facultyDetails);
 
-  // Keep role in sync with facultyDetails changes
   useEffect(() => {
     if (facultyDetails?.isAdmin) {
       setRole(facultyDetails.role || "admin");
@@ -62,12 +59,10 @@ const Sidebar = () => {
     const newRole = e.target.value;
     setRole(newRole);
 
-    // Update facultyDetails with role (used only in frontend)
     const updated = { ...facultyDetails, role: newRole };
     setFacultyDetails(updated);
     localStorage.setItem("facultyDetails", JSON.stringify(updated));
 
-    // Navigate to role-specific dashboard
     navigate(newRole === "admin" ? "/admin-dashboard" : "/dashboard", {
       state: { facultyDetails: updated },
     });
@@ -90,6 +85,7 @@ const Sidebar = () => {
     },
     { name: "Create Quiz", to: "/createquiz", icon: <FiPlusCircle /> },
     { name: "My Quiz", to: "/myquiz", icon: <FiBookOpen /> },
+    { name: "Block Students", to: "/blockstudents", icon: <FiBookOpen /> },
     { name: "Student Details", to: "/studentdetails", icon: <FiUsers /> },
   ];
 
@@ -130,7 +126,7 @@ const Sidebar = () => {
               <span className="font-semibold text-gray-700">Name:</span>{" "}
               {facultyDetails?.name || "N/A"}
             </div>
-            
+
             <div>
               <span className="font-semibold text-gray-700">Department:</span>{" "}
               {facultyDetails?.department || "N/A"}
@@ -142,7 +138,7 @@ const Sidebar = () => {
                 <select
                   value={role}
                   onChange={handleRoleChange}
-                  className="ml-2 border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-[#243278] "
+                  className="ml-2 border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-[#243278]"
                 >
                   <option value="admin">Admin</option>
                   <option value="faculty">Faculty</option>
@@ -159,7 +155,7 @@ const Sidebar = () => {
                 onClick={() => handleNavClick(item.to)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all ${
                   isActive(item.to)
-                    ? "bg-[#243278]  text-white shadow-lg"
+                    ? "bg-[#243278] text-white shadow-lg"
                     : "hover:text-black hover:shadow-lg"
                 }`}
               >

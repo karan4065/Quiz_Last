@@ -229,6 +229,50 @@ console.log(req.body)
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+export const unblockStudent = async (req, res) => {
+  const { quizId } = req.params;
+  const { studentId } = req.body;
+
+  if (!studentId)
+    return res.status(400).json({ success: false, message: "Student ID required" });
+
+  try {
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz)
+      return res.status(404).json({ success: false, message: "Quiz not found" });
+
+    quiz.blocked = quiz.blocked.filter((id) => id.toString() !== studentId);
+    await quiz.save();
+
+    res.json({ success: true, message: "Student unblocked successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+export const getBlockedStudents = async (req, res) => {
+  const facultyId = req.user._id.toString(); // Assuming JWT auth
+
+  if (!facultyId)
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+
+  try {
+    // Fetch all quizzes created by this faculty
+    const quizzes = await Quiz.find({ createdBy: facultyId }).populate("blocked", "name email studentId year");
+
+    // Only include quizzes that have blocked students
+    const data = quizzes
+      .map((quiz) => ({
+        quizId: quiz._id,
+        title: quiz.title,
+        blockedStudents: quiz.blocked,
+      }))
+      .filter((quiz) => quiz.blockedStudents.length > 0); // Only quizzes with blocked students
+
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // Delete Faculty
 export const deleteFaculty = async (req, res) => {

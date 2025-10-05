@@ -46,6 +46,7 @@ router.get('/:quizId/category-distribution', getCategoryWiseAnswerDistribution);
 // Get category-wise answer distribution for a specific quiz and student
 router.get('/:quizId/student/:studentId/category-distribution', getCategoryWiseAnswerDistributionForStudent);
 router.post("/upload",createQuizByFaculty)
-
+import { unblockStudent } from '../controllers/quizController.js';
+router.post("/:quizId/unblock-student", unblockStudent);
 router.post("/:quizId/block-student",isAuthenticated ,blockStudent);
 export default router;

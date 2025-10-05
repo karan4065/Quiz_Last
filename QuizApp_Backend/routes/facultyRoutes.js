@@ -14,4 +14,11 @@ router.get("/getall", getAllFaculties);
 router.get("/:facultyId/quizzes", getFacultyQuizzes);
 router.put("/update/:id", updateFaculty);
 router.delete("/delete/:id", deleteFaculty);
+import { unblockStudent } from '../controllers/facultyController.js';
+import { getBlockedStudents } from '../controllers/facultyController.js';
+import { isFacultyAuthenticated } from '../middlewares/facultyAuth.js';
+router.get("/quizzes/blocked-students",isFacultyAuthenticated, getBlockedStudents);
+
+// POST unblock a student
+router.post("/quizzes/:quizId/unblock-student", unblockStudent);
 export default router;

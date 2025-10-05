@@ -373,6 +373,30 @@ export const getQuiz = async (req, res) => {
 //     res.status(500).json({ success: false, message: error.message });
 //   }
 // };
+// controllers/quizController.js
+
+export const unblockStudent = async (req, res) => {
+  const { quizId } = req.params;
+  const { studentId } = req.body;
+
+  if (!studentId) {
+    return res.status(400).json({ success: false, message: "Student ID required" });
+  }
+
+  try {
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: "Quiz not found" });
+    }
+
+    quiz.blocked = quiz.blocked.filter((id) => id.toString() !== studentId);
+    await quiz.save();
+
+    res.json({ success: true, message: "Student unblocked successfully", blocked: quiz.blocked });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 export const blockStudent = async (req, res) => {
   const { quizId } = req.params;

@@ -19,6 +19,8 @@ import HomePageStudent from "./pages/student/HomePageStudent";
 import ForgotPassword from "./pages/student/ForgotPassword";
 import ResetPassword from "./pages/student/ResetPassword";
 import StStudentQuizResult from "./pages/student/StStudentQuizResult";
+import BlockedStudents from "./pages/faculty/Blockedstudent"
+import BlockedStudentPage from "./pages/faculty/BlockedStudentPage";
 // Layout
 const DashboardLayout = ({ children }) => (
   <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -40,6 +42,7 @@ const App = () => {
           <Route path="/seeresult" element={<Seeresult />} />
           <Route path="/result/:id" element={<HomePageStudent />} />
           <Route path="/thank-you" element={<ThankYou />} />
+        <Route path="/blockstudents" element={<BlockedStudentPage/>} />
           <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
           <Route path="/createquiz" element={<DashboardLayout><CreateQuiz /></DashboardLayout>} />
           <Route path="/myquiz" element={<DashboardLayout><CreateMyQuizzes /></DashboardLayout>} />
