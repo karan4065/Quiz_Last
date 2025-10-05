@@ -269,21 +269,53 @@ export const createQuizByFaculty = async (req, res) => {
 
 
 
+// export const getQuiz = async (req, res) => {
+//   const { quizId } = req.params;
+//   const studentId = req.user?._id;
+//   if (!studentId) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+//   try {
+//     const quiz = await Quiz.findById(quizId).populate("createdBy", "name");
+//     if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+
+//     let progress = await QuizProgress.findOne({ student: studentId, quiz: quizId });
+
+//     if (progress && progress.status === true) {
+//       return res.status(403).json({ success: false, message: "You have already attempted this quiz." });
+//     }
+
+//     if (!progress) {
+//       progress = await QuizProgress.create({
+//         student: studentId,
+//         quiz: quizId,
+//         currentQuestionIndex: 0,
+//         answers: [],
+//         timeLeft: quiz.duration * 60,
+//         completed: false,
+//         status: false
+//       });
+//     }
+//     console.log(progress)
+//     res.json({ success: true, message: "Quiz fetched", data: { quiz, progress } });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 export const getQuiz = async (req, res) => {
   const { quizId } = req.params;
-  const studentId = req.user?._id;
-  if (!studentId) return res.status(401).json({ success: false, message: "Unauthorized" });
+  const studentId = req.user._id.toString();
+
+  if (!studentId)
+    return res.status(401).json({ success: false, message: "Unauthorized" });
 
   try {
     const quiz = await Quiz.findById(quizId).populate("createdBy", "name");
-    if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+    if (!quiz)
+      return res.status(404).json({ success: false, message: "Quiz not found" });
 
     let progress = await QuizProgress.findOne({ student: studentId, quiz: quizId });
 
-    if (progress && progress.status === true) {
-      return res.status(403).json({ success: false, message: "You have already attempted this quiz." });
-    }
-
+    // If no progress exists, create it
     if (!progress) {
       progress = await QuizProgress.create({
         student: studentId,
@@ -292,15 +324,111 @@ export const getQuiz = async (req, res) => {
         answers: [],
         timeLeft: quiz.duration * 60,
         completed: false,
-        status: false
+        status: false,
       });
     }
-    console.log(progress)
-    res.json({ success: true, message: "Quiz fetched", data: { quiz, progress } });
+
+    // Check if quiz is already attempted
+    if (progress && progress.status === true) {
+      return res.status(403).json({ success: false, message: "You have already attempted this quiz." });
+    }
+
+    // Check if student is blocked
+    const isBlocked = quiz.blocked.includes(studentId);
+
+    // ✅ Send quiz + progress + blocked status
+    res.json({
+      success: true,
+      message: isBlocked
+        ? "You are blocked from this quiz due to malpractice."
+        : "Quiz fetched successfully",
+      blocked: isBlocked,
+      data: { quiz, progress },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// POST /api/quizzes/:quizId/block-student
+// export const blockStudent = async (req, res) => {
+//   const { quizId } = req.params;
+//   const { studentId } = req.body;
+
+//   if (!studentId)
+//     return res.status(400).json({ success: false, message: "Student ID required" });
+
+//   try {
+//     const quiz = await Quiz.findById(quizId);
+//     if (!quiz) return res.status(404).json({ success: false, message: "Quiz not found" });
+
+//     // prevent duplicate entries
+//     if (!quiz.blocked.includes(studentId)) {
+//       quiz.blocked.push(studentId);
+//       await quiz.save();
+//     }
+
+//     res.json({ success: true, message: "Student blocked from this quiz" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+export const blockStudent = async (req, res) => {
+  const { quizId } = req.params;
+  const studentId = req.user?._id?.toString();
+console.log("student block")
+  if (!quizId || !studentId) {
+    return res.status(400).json({
+      success: false,
+      message: "Quiz ID and Student ID are required",
+    });
+  }
+
+  try {
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: "Quiz not found",
+      });
+    }
+
+    // ✅ Make sure quiz.blocked exists and is an array
+    if (!Array.isArray(quiz.blocked)) {
+      quiz.blocked = [];
+    }
+
+    // ✅ Prevent duplicate student IDs
+    const alreadyBlocked = quiz.blocked.some(
+      (id) => id.toString() === studentId
+    );
+
+    if (alreadyBlocked) {
+      return res.status(200).json({
+        success: true,
+        message: "Student is already blocked from this quiz",
+      });
+    }
+
+    // ✅ Add student only if not already blocked
+    quiz.blocked.push(studentId);
+    await quiz.save();
+
+    return res.json({
+      success: true,
+      message: "Student blocked successfully from this quiz",
+    });
+  } catch (error) {
+    console.error("❌ Error blocking student:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
 
 // ---------------- Save Progress ----------------
 export const saveProgress = async (req, res) => {

@@ -7,7 +7,8 @@ import {
     getCategoryWiseAnswerDistribution,
     getCategoryWiseAnswerDistributionForStudent,saveProgress,
     createQuizByFaculty,getQuizSubmissions,
-    getQuizTitleById
+    getQuizTitleById,
+    blockStudent
 } from '../controllers/quizController.js';
 import { getCategoryDistribution } from '../controllers/quizSubmissionController.js';
 import { submitQuiz } from '../controllers/quizSubmissionController.js';
@@ -46,5 +47,5 @@ router.get('/:quizId/category-distribution', getCategoryWiseAnswerDistribution);
 router.get('/:quizId/student/:studentId/category-distribution', getCategoryWiseAnswerDistributionForStudent);
 router.post("/upload",createQuizByFaculty)
 
-
+router.post("/:quizId/block-student",isAuthenticated ,blockStudent);
 export default router;

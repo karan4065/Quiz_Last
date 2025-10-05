@@ -39,22 +39,14 @@ const seededShuffle = (array, seed) => {
 
 /* =========================
    Small presentational pieces
-   (kept separate for clarity)
    ========================= */
-
-/**
- * OptionButton
- * - keeps same behavior: clicking reports the option via onClick
- * - improved visuals: responsive sizing, text wrap, accessible focus styles
- */
 const OptionButton = ({ option, isSelected, onClick, disabled }) => (
   <button
     onClick={() => !disabled && onClick(option)}
     className={`flex items-center justify-center text-center gap-2 p-3 md:p-4 rounded-lg border transition-transform duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 select-none break-words
       ${isSelected
         ? "bg-green-600 text-white border-green-700 shadow-lg"
-        : "bg-white border-gray-300 hover:border-green-500 hover:shadow-sm"}
-    `}
+        : "bg-white border-gray-300 hover:border-green-500 hover:shadow-sm"}`}
     style={{ userSelect: "none", minHeight: 56 }}
     disabled={disabled}
     aria-pressed={isSelected}
@@ -63,15 +55,6 @@ const OptionButton = ({ option, isSelected, onClick, disabled }) => (
   </button>
 );
 
-/**
- * QuestionComponent
- * - preserves all original logic/props
- * - improved responsive layout:
- *    - image area and options area split nicely on wide screens
- *    - on narrow screens image sits above options
- *    - options use responsive grid (auto-fit) to ensure they fit without scrolling
- * - image is protected from dragging & right-click (maintained)
- */
 const QuestionComponent = ({ question, selectedOption, onOptionSelect, disabled }) => {
   return (
     <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg mb-6 select-none transition duration-300 hover:shadow-2xl">
@@ -81,19 +64,10 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect, disabled 
           <span className="block text-sm text-gray-500 mt-1">{question.description}</span>
         )}
       </h2>
-
-      {/* Layout container ensures image + options fit the viewport well */}
       {question.image ? (
-        <div
-          className="flex flex-col md:flex-row gap-6 items-start"
-          style={{ minHeight: 200 }}
-        >
-          {/* Image container: responsive, keeps height limited relative to viewport */}
+        <div className="flex flex-col md:flex-row gap-6 items-start" style={{ minHeight: 200 }}>
           <div className="flex-shrink-0 md:w-1/2 w-full flex justify-center items-center">
-            <div
-              className="w-full max-w-full rounded-lg overflow-hidden border"
-              style={{ maxHeight: "60vh" }}
-            >
+            <div className="w-full max-w-full rounded-lg overflow-hidden border" style={{ maxHeight: "60vh" }}>
               <img
                 src={question.image}
                 alt="Question"
@@ -103,18 +77,8 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect, disabled 
               />
             </div>
           </div>
-
-          {/* Options container: responsive grid that adapts columns to viewport width.
-              Uses auto-fit / minmax to prevent overflow, so options are always visible
-              without requiring page scroll (they will reflow into more columns/rows). */}
           <div className="flex-1 w-full">
-            <div
-              className="grid gap-3"
-              style={{
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
-              }}
-            >
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))" }}>
               {question.options.map((opt, idx) => (
                 <OptionButton
                   key={idx}
@@ -128,13 +92,7 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect, disabled 
           </div>
         </div>
       ) : (
-        // No image: options in responsive grid (same behavior)
-        <div
-          className="grid gap-3"
-          style={{
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
-          }}
-        >
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))" }}>
           {question.options.map((opt, idx) => (
             <OptionButton
               key={idx}
@@ -150,21 +108,7 @@ const QuestionComponent = ({ question, selectedOption, onOptionSelect, disabled 
   );
 };
 
-/* =========================
-   Navigation buttons & Timer
-   (styling improved but behavior unchanged)
-   ========================= */
-
-const NavigationButtons = ({
-  currentIndex,
-  totalQuestions,
-  canSubmit,
-  onPrev,
-  onNext,
-  onSubmit,
-  submitting,
-  disabled,
-}) => (
+const NavigationButtons = ({ currentIndex, totalQuestions, canSubmit, onPrev, onNext, onSubmit, submitting, disabled }) => (
   <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-2 select-none">
     <div className="flex gap-2 w-full sm:w-auto">
       <button
@@ -182,7 +126,6 @@ const NavigationButtons = ({
         Next
       </button>
     </div>
-
     {currentIndex === totalQuestions - 1 && (
       <div className="w-full sm:w-auto">
         <button
@@ -203,24 +146,18 @@ const NavigationButtons = ({
 
 const TimerBar = ({ timeLeft, totalTime }) => {
   const percentage = (timeLeft / totalTime) * 100;
-  const bgColor =
-    percentage > 50 ? "bg-green-500" : percentage > 20 ? "bg-yellow-400" : "bg-red-500";
+  const bgColor = percentage > 50 ? "bg-green-500" : percentage > 20 ? "bg-yellow-400" : "bg-red-500";
 
   return (
     <div className="w-full h-3 sm:h-4 bg-gray-300 rounded-full overflow-hidden mb-4 shadow-inner">
-      <div
-        className={`${bgColor} h-3 sm:h-4 transition-all duration-500`}
-        style={{ width: `${percentage}%` }}
-      />
+      <div className={`${bgColor} h-3 sm:h-4 transition-all duration-500`} style={{ width: `${percentage}%` }} />
     </div>
   );
 };
 
 /* =========================
-   Main Quiz component
-   (functionality preserved; UI improved/responsive)
+   Main Quiz Component
    ========================= */
-
 const Quiz = () => {
   const [categories, setCategories] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -240,22 +177,55 @@ const Quiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
 
-  // --- Security listeners (unchanged) ---
+  /* ---------------------
+     Block Student Function
+     --------------------- */
+const blockStudent = async () => {
+  try {
+    await axios.post(
+      `http://localhost:5000/api/quizzes/${quizId}/block-student`,
+      {}, // empty body
+      { withCredentials: true } // ensures cookie is sent
+    );
+
+    // Freeze the quiz immediately
+    setQuizFrozen(true);
+    setSubmitting(false);
+
+    alert("You have been blocked from this quiz due to illegal activity!");
+
+    // Navigate to the blocked page after short delay
+
+  } catch (e) {
+    console.error("Error blocking student:", e);
+  }
+};
+
+
+
+  /* ---------------------
+     Security Listeners
+     --------------------- */
   useEffect(() => {
     const prevent = (e) => e.preventDefault();
     document.addEventListener("copy", prevent);
     document.addEventListener("contextmenu", prevent);
     document.addEventListener("dragstart", prevent);
     document.addEventListener("selectstart", prevent);
+
     const keyListener = (e) => {
       if (
         e.key === "F12" ||
         (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) ||
         (e.ctrlKey && e.key.toUpperCase() === "U")
-      )
+      ) {
         e.preventDefault();
+        blockStudent();
+        alert("Illegal activity detected! You are blocked.");
+      }
     };
     document.addEventListener("keydown", keyListener);
+
     return () => {
       document.removeEventListener("copy", prevent);
       document.removeEventListener("contextmenu", prevent);
@@ -263,58 +233,86 @@ const Quiz = () => {
       document.removeEventListener("selectstart", prevent);
       document.removeEventListener("keydown", keyListener);
     };
-  }, []);
+  }, [student]);
 
-  // --- Freeze on tab change (unchanged) ---
+  /* ---------------------
+     Freeze on tab change
+     --------------------- */
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden" && !quizCompleted && !quizFrozen) {
         setQuizFrozen(true);
         handleSubmit();
-        alert("Tab change detected! Quiz is frozen and submitted.");
+        blockStudent();
+        alert("Tab change detected! You are blocked and quiz is submitted.");
       }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [quizCompleted, quizFrozen]);
+  }, [quizCompleted, quizFrozen, student]);
 
-  // --- Load student and quiz (unchanged endpoints) ---
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const { data } = await axios.get("http://localhost:5000/api/student/me", {
-          withCredentials: true,
-        });
-        if (data.success) setStudent(data.student);
-      } catch {
-        handleLogout();
-      }
-      try {
-        const { data } = await axios.get(
-          `http://localhost:5000/api/quizzes/${quizId}`,
-          { withCredentials: true }
-        );
-        if (!data.success) {
-          navigate("/already-attempted");
-          return;
-        }
-        setCategories(data.data.quiz.categories || []);
-        const progress = data.data.progress;
-        if (progress) {
-          setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
-          setAnswers(progress.answers || []);
-          setTimeLeft(progress.timeLeft || 15 * 60);
-        }
-        setProgressLoaded(true);
-        enterFullscreen();
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    loadData();
-  }, [quizId]);
+  /* ---------------------
+     Load Student & Quiz
+     --------------------- */
+ useEffect(() => {
+  const loadData = async () => {
+    try {
+      // Load student info
+      const { data: studentData } = await axios.get(
+        "http://localhost:5000/api/student/me",
+        { withCredentials: true }
+      );
+      if (studentData.success) setStudent(studentData.student);
+      else handleLogout();
+    } catch {
+      handleLogout();
+    }
 
-  // --- Shuffle questions & options (preserved) ---
+    try {
+      // Load quiz info
+      const { data } = await axios.get(
+        `http://localhost:5000/api/quizzes/${quizId}`,
+        { withCredentials: true }
+      );
+
+      if (!data.success) {
+        // Quiz already attempted
+        navigate("/already-attempted");
+        return;
+      }
+
+      const quiz = data.data.quiz;
+      const progress = data.data.progress;
+      const isBlocked = data.blocked || false;
+
+      // Set blocked state if student is blocked
+      if (isBlocked) {
+        setQuizFrozen(true); // freeze the quiz
+        alert(data.message || "You are blocked from this quiz.");
+      }
+
+      setCategories(quiz.categories || []);
+
+      if (progress) {
+        setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
+        setAnswers(progress.answers || []);
+        setTimeLeft(progress.timeLeft || 15 * 60);
+      }
+
+      setProgressLoaded(true);
+      enterFullscreen();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  loadData();
+}, [quizId]);
+
+
+  /* ---------------------
+     Shuffle Questions & Options
+     --------------------- */
   useEffect(() => {
     if (categories.length > 0 && progressLoaded && student) {
       let flatQuestions = categories.flatMap((c) => c.questions);
@@ -326,7 +324,9 @@ const Quiz = () => {
     }
   }, [categories, progressLoaded, student]);
 
-  // --- Starting countdown (preserved) ---
+  /* ---------------------
+     Starting Countdown
+     --------------------- */
   useEffect(() => {
     if (!progressLoaded || questions.length === 0) return;
     if (startingCountdown > 0) {
@@ -337,7 +337,9 @@ const Quiz = () => {
     }
   }, [startingCountdown, progressLoaded, questions.length]);
 
-  // --- Save progress (unchanged) ---
+  /* ---------------------
+     Save Progress
+     --------------------- */
   const saveProgress = async () => {
     if (quizCompleted || quizFrozen || !progressLoaded) return;
     try {
@@ -352,10 +354,11 @@ const Quiz = () => {
   };
   useEffect(() => {
     saveProgress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, currentQuestionIndex, timeLeft]);
 
-  // --- Timer (preserved) ---
+  /* ---------------------
+     Timer
+     --------------------- */
   useEffect(() => {
     if (!quizCompleted && !quizFrozen && timeLeft > 0) {
       const interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
@@ -366,7 +369,9 @@ const Quiz = () => {
     }
   }, [timeLeft, quizCompleted, quizFrozen]);
 
-  // --- Option click (preserved) ---
+  /* ---------------------
+     Option Click
+     --------------------- */
   const handleOptionClick = (option) => {
     if (quizFrozen || quizCompleted) return;
     const qId = questions[currentQuestionIndex]?._id;
@@ -378,14 +383,15 @@ const Quiz = () => {
     setSelectedOption(option);
   };
 
-  // --- Load selected option for current question (preserved) ---
   useEffect(() => {
     const currQ = questions[currentQuestionIndex];
     const ans = answers.find((a) => a.questionId === currQ?._id);
     setSelectedOption(ans?.selectedOption || null);
   }, [currentQuestionIndex, questions, answers]);
 
-  // --- Submit quiz (preserved) ---
+  /* ---------------------
+     Submit Quiz
+     --------------------- */
   const handleSubmit = async () => {
     if (quizCompleted) return;
     try {
@@ -404,7 +410,9 @@ const Quiz = () => {
     }
   };
 
-  // --- Fullscreen helpers (preserved) ---
+  /* ---------------------
+     Fullscreen Helpers
+     --------------------- */
   const enterFullscreen = () => {
     const elem = document.documentElement;
     if (elem.requestFullscreen) elem.requestFullscreen();
@@ -419,6 +427,9 @@ const Quiz = () => {
     else if (document.msExitFullscreen) document.msExitFullscreen();
   };
 
+  /* ---------------------
+     Sidebar & Logout
+     --------------------- */
   const toggleSidebar = () => setSidebarOpen((s) => !s);
   const handleLogout = () => {
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
@@ -427,7 +438,7 @@ const Quiz = () => {
   const isAnswered = (i) => answers.some((a) => a.questionId === questions[i]?._id);
 
   /* ---------------------
-     Early loading / countdown
+     Loading / Countdown
      --------------------- */
   if (!progressLoaded || questions.length === 0)
     return <p className="text-center mt-20 text-lg">Loading quiz...</p>;
@@ -441,13 +452,10 @@ const Quiz = () => {
 
   const currentQ = questions[currentQuestionIndex];
 
-  /* ===========================
-     FINAL RENDER - improved layout
-     - keeps the same components & logic
-     - ensures content fits viewport (no page scrolling required)
-     - responsive: image above options on small screens, side-by-side on larger screens
-     =========================== */
-  return (
+  /* ---------------------
+     FINAL RENDER
+     --------------------- */
+   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-200 select-none">
       <Navbar userName={student?.name || "Student"} onProfileClick={toggleSidebar} />
 

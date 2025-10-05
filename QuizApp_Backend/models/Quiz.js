@@ -1,35 +1,15 @@
 import { Schema, model } from "mongoose";
 
 const QuizSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  subject: {                // Subject of the quiz
-    type: String,
-    required: true,
-  },
-  duration: {
-    type: Number,
-    required: true,
-    default: 30,            // Duration in minutes
-  },
-  limit: {                  // Max number of students allowed
-    type: Number,
-    required: true,
-    default: 80,
-  },
-  session: {                // Academic session
-    type: String,
-    required: true,
-    default: "2025-2026",
-  },
+  title: { type: String, required: true },
+  subject: { type: String, required: true },
+  duration: { type: Number, required: true, default: 30 },
+  limit: { type: Number, required: true, default: 80 },
+  session: { type: String, required: true, default: "2025-2026" },
+
   categories: [
     {
-      category: {
-        type: String,
-        required: true,
-      },
+      category: { type: String, required: true },
       questions: [
         {
           _id: { type: Schema.Types.ObjectId, auto: true },
@@ -51,11 +31,13 @@ const QuizSchema = new Schema({
       ],
     },
   ],
+
   createdBy: {
     type: Schema.Types.ObjectId,
     ref: "Faculty",
     required: true,
   },
+
   completed: [
     {
       student: { type: Schema.Types.ObjectId, ref: "Student", required: true },
@@ -63,10 +45,10 @@ const QuizSchema = new Schema({
       submittedAt: { type: Date, default: Date.now },
     },
   ],
-}, {
-  timestamps: true,
-});
+
+  // ✅ NEW FIELD
+  blocked: [{ type: Schema.Types.ObjectId, ref: "Student" }],
+}, { timestamps: true });
 
 const Quiz = model("Quiz", QuizSchema);
-
 export default Quiz;

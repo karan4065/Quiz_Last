@@ -5,7 +5,7 @@ export const isAuthenticated = async (req, res, next) => {
   try {
  
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    console.log(token)
+   
     if (!token) {
       return res.status(401).json({ success: false, message: "Not logged in" });
     }
@@ -23,7 +23,7 @@ if (!student) {
 }
 
     req.user = student;
-
+console.log("jj",req.user)
     next();
   } catch (err) {
     console.error(err);
