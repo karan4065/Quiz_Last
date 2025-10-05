@@ -24,7 +24,7 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 // CORS configuration
 const corsOptions = {
- origin: "https://svpcetquizsystem.vercel.app",
+ origin: "http://localhost:5173",
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
     optionsSuccessStatus: 200
